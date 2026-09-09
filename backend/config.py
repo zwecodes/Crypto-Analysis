@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 from pathlib import Path
 
@@ -13,7 +14,10 @@ load_dotenv(REPO_ROOT / ".env")
 def _normalize_supabase_url(url: str | None) -> str | None:
     if not url:
         return url
-    return url.rstrip("/").removesuffix("/rest/v1")
+    url = url.rstrip("/")
+    if url.endswith("/rest/v1"):
+        url = url[: -len("/rest/v1")]
+    return url
 
 
 SUPABASE_URL = _normalize_supabase_url(os.getenv("SUPABASE_URL"))
