@@ -1,0 +1,26 @@
+.error-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+  border: 1px solid var(--color-error-border);
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.error-retry-button {
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8125rem;
+}
+
+.error-retry-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}

@@ -1,0 +1,8 @@
+# Vite build output
+dist/
+dist-ssr/
+*.local
+
+# Local env files (never commit real credentials)
+.env
+.env.local

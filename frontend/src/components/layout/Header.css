@@ -1,0 +1,13 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+}
+
+.app-header-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
