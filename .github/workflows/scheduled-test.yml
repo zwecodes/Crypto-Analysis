@@ -1,0 +1,13 @@
+name: Scheduled Test
+
+on:
+  schedule:
+    - cron: "0 * * * *"   # runs once every hour
+  workflow_dispatch:        # lets you trigger it manually for testing
+
+jobs:
+  test-schedule:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print test message
+        run: echo "Scheduled workflow ran successfully at $(date)"
