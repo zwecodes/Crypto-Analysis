@@ -1,6 +1,7 @@
 .app-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   height: 56px;
   padding: 0 1.5rem;
   border-bottom: 1px solid var(--color-border);
@@ -10,4 +11,28 @@
 .app-header-title {
   font-weight: 600;
   font-size: 1rem;
+}
+
+.app-header-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-header-email {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.app-header-logout {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: none;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.app-header-logout:hover {
+  background-color: var(--color-hover);
 }
