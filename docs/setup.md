@@ -11,3 +11,12 @@
 
 ## Frontend setup
 (instructions once frontend scaffold exists)
+
+## Python Version
+This project requires **Python 3.11+**. Code uses modern syntax 
+(e.g. `str | None` type hints) that isn't compatible with Python 3.8 
+or earlier.
+
+Check your version: `python --version`
+If you're on an older version, install 3.11+ from python.org or via 
+pyenv/conda.
