@@ -36,6 +36,7 @@ async def validation_exception_handler(
     )
 
 
+@app.get("/")
 @app.get("/health")
 def health():
     return {"status": "ok"}
