@@ -1,0 +1,24 @@
+.market-status-badge {
+  display: inline-block;
+  width: fit-content;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.market-status-active {
+  background-color: #e3f6ec;
+  color: #16794d;
+}
+
+.market-status-inactive {
+  background-color: var(--color-hover);
+  color: var(--color-text-muted);
+}
+
+.market-status-updated {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}

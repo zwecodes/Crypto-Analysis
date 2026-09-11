@@ -1,0 +1,54 @@
+.market-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.market-summary-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.market-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 800px) {
+  .market-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.market-summary-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.market-summary-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.market-summary-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.market-summary-price {
+  font-size: 1.4rem;
+}
+
+.market-summary-positive {
+  color: #16794d;
+}
+
+.market-summary-negative {
+  color: #a12626;
+}
