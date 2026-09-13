@@ -1,0 +1,25 @@
+name: Retraining Pipeline
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  retrain-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Pull new data (placeholder)
+        run: echo "Step 1 - Pulling new BTC data (placeholder, real logic comes later)"
+
+      - name: Retrain model (placeholder)
+        run: echo "Step 2 - Retraining model (placeholder, real ML logic plugs in here once baseline model exists)"
+
+      - name: Evaluate model (placeholder)
+        run: echo "Step 3 - Evaluating retrained model (placeholder, real evaluation logic comes later)"
+
+      - name: Log result
+        run: echo "Retraining pipeline ran successfully at $(date)"
