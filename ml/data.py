@@ -7,7 +7,7 @@ import requests
 import pandas as pd
 
 
-def get_btc_data(interval: str = "1h", limit: int = 500) -> pd.DataFrame:
+def get_btc_data(interval: str = "1h", limit: int = 1000) -> pd.DataFrame:
     """
     Fetch historical BTC/USDT candlestick data from Binance.
 

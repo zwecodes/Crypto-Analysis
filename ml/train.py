@@ -5,6 +5,8 @@ Model training pipeline.
 import pandas as pd
 from features import build_feature_dataframe
 from labels import add_labels
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix
 
 FEATURE_COLUMNS = [
     "rsi",
@@ -21,6 +23,8 @@ FEATURE_COLUMNS = [
 
 
 def prepare_data():
+    from data import get_btc_data
+    df = get_btc_data(limit=1000)
     df = build_feature_dataframe()
     df = add_labels(df)
     df = df.dropna(subset=FEATURE_COLUMNS + ["label"])
@@ -35,8 +39,26 @@ def prepare_data():
     return X_train, X_test, y_train, y_test
 
 
+def train_model(X_train, y_train):
+    model = RandomForestClassifier(
+        n_estimators=100,
+        max_depth=8,
+        random_state=42,
+        class_weight="balanced",
+    )
+    model.fit(X_train, y_train)
+    return model
+
+
 if __name__ == "__main__":
     X_train, X_test, y_train, y_test = prepare_data()
     print(f"Train size: {len(X_train)}, Test size: {len(X_test)}")
-    print(f"\nTrain label distribution:\n{y_train.value_counts()}")
-    print(f"\nTest label distribution:\n{y_test.value_counts()}")
+
+    model = train_model(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    print(f"\nAccuracy: {model.score(X_test, y_test):.3f}")
+    print("\nClassification report:")
+    print(classification_report(y_test, y_pred))
+    print("Confusion matrix (rows=actual, cols=predicted):")
+    print(confusion_matrix(y_test, y_pred, labels=["BUY", "HOLD", "SELL"]))
