@@ -3,6 +3,8 @@ import "./MarketSummaryCard.css";
 
 interface MarketSummaryCardProps {
   data: MarketSummary;
+  /** Formatted display string for the newest candle's timestamp (Task 3, Step 11). Optional — omitted while mock data was in use. */
+  lastUpdated?: string;
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -22,12 +24,17 @@ function formatVolume(volume: number): string {
   return currencyFormatter.format(volume);
 }
 
-export function MarketSummaryCard({ data }: MarketSummaryCardProps) {
+export function MarketSummaryCard({ data, lastUpdated }: MarketSummaryCardProps) {
   const isPositive = data.changePercent24h >= 0;
 
   return (
     <div className="market-summary-card">
-      <span className="market-summary-title">Bitcoin ({data.symbol})</span>
+      <div className="market-summary-header">
+        <span className="market-summary-title">Bitcoin ({data.symbol})</span>
+        {lastUpdated && (
+          <span className="market-summary-updated">Last updated: {lastUpdated}</span>
+        )}
+      </div>
 
       <div className="market-summary-grid">
         <div className="market-summary-stat">

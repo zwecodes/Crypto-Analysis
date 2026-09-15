@@ -13,6 +13,19 @@
   font-weight: 600;
 }
 
+.market-summary-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.market-summary-updated {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
 .market-summary-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

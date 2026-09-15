@@ -1,30 +1,16 @@
 import type { Signal } from "../types/api";
-import type {
-  MarketSummary,
-  IndicatorSummaryItem,
-  MarketStatus,
-  ChartPoint,
-} from "../types/dashboard";
+import type { IndicatorSummaryItem, MarketStatus } from "../types/dashboard";
 
 /**
- * All Task 2 dashboard data lives here as mock/static values. When the real
- * backend (docs/api-contract.md) and ML model are ready, this file is the
- * only place that needs to be swapped for real fetched data — components
- * consume these values as props and don't know or care where they came from.
+ * Remaining Task 3 mock data: signal, indicators, and market status stay
+ * mock per Task 3 scope (Step 12) — only BTC price/chart data was replaced
+ * with real API data (see services/priceService.ts). This file is still
+ * the single place to swap these for real data in a future task.
  */
 
 const MOCK_TIMESTAMP = Math.floor(
   new Date("2026-09-10T10:30:00Z").getTime() / 1000
 );
-
-export const mockMarketSummary: MarketSummary = {
-  symbol: "BTC",
-  price: 67842.35,
-  changePercent24h: 2.45,
-  high24h: 68500.0,
-  low24h: 65920.0,
-  volume24h: 28_400_000_000,
-};
 
 // confidence is assumed to be a 0–1 fraction (displayed as a rounded
 // percentage) since docs/api-contract.md does not yet specify the unit —
@@ -47,23 +33,3 @@ export const mockMarketStatus: MarketStatus = {
   status: "Active",
   lastUpdated: "2026-09-10T10:30:00Z",
 };
-
-export const mockChartData: ChartPoint[] = generateMockChartData();
-
-/** 24 hourly mock candles with a gentle pseudo-random walk so the line looks like a real price chart. */
-function generateMockChartData(): ChartPoint[] {
-  const points: ChartPoint[] = [];
-  const hourSeconds = 60 * 60;
-  let price = 65500;
-
-  for (let i = 23; i >= 0; i--) {
-    const drift = Math.sin(i / 3) * 400 + (i % 5 === 0 ? 250 : -120);
-    price = Math.max(64000, price + drift);
-    points.push({
-      timestamp: MOCK_TIMESTAMP - i * hourSeconds,
-      close: Math.round(price * 100) / 100,
-    });
-  }
-
-  return points;
-}
