@@ -5,7 +5,7 @@ Labels each row BUY/HOLD/SELL based on future price movement.
 import pandas as pd
 
 
-def add_labels(df: pd.DataFrame, horizon: int = 4, threshold: float = 0.005) -> pd.DataFrame:
+def add_labels(df: pd.DataFrame, horizon: int = 6, threshold: float = 0.008) -> pd.DataFrame:
     """
     horizon: how many periods ahead to look (e.g. 4 hours ahead on 1h candles)
     threshold: % price change to count as BUY/SELL (0.005 = 0.5%)
