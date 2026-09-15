@@ -1,7 +1,8 @@
 """
 Model training pipeline.
 """
-
+import joblib
+import os
 import pandas as pd
 from features import build_feature_dataframe
 from labels import add_labels
@@ -62,3 +63,7 @@ if __name__ == "__main__":
     print(classification_report(y_test, y_pred))
     print("Confusion matrix (rows=actual, cols=predicted):")
     print(confusion_matrix(y_test, y_pred, labels=["BUY", "HOLD", "SELL"]))
+
+    os.makedirs("models", exist_ok=True)
+    joblib.dump(model, "models/baseline_rf.pkl")
+    print("\nModel saved to models/baseline_rf.pkl")
