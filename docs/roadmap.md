@@ -27,7 +27,7 @@
 - [x] `.gitignore`, CI pipeline, branch protection set up
 - [x] GitHub Projects board created
 - [x] Discord channels set up
-- [ ] Tech stack confirmed (frontend framework, backend language, database)
+- [x] Tech stack confirmed (frontend framework, backend language, database)
 - [ ] API contract drafted (price data, indicators, signals, strategies, alerts endpoints)
 - [ ] Each person's dev environment running locally
 - [ ] Binance API access confirmed (sample data pull)
