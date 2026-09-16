@@ -4,7 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from routes.indicators import router as indicators_router
 from routes.prices import router as prices_router
+from routes.signals import router as signals_router
 from routes.user_strategy import router as user_strategy_router
 from services.auth import get_current_user
 
@@ -18,6 +20,8 @@ app.add_middleware(
 )
 
 app.include_router(prices_router)
+app.include_router(indicators_router)
+app.include_router(signals_router)
 app.include_router(user_strategy_router)
 
 
