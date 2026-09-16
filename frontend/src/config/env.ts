@@ -24,10 +24,18 @@ function readEnvVar(key: string, value: string | undefined): string {
   return value;
 }
 
+/**
+ * createClient() treats this as the project origin and appends /auth/v1 and
+ * /rest/v1 itself. A URL that already ends in /rest/v1 produces
+ * /rest/v1/auth/v1/signup.
+ */
+function normalizeSupabaseUrl(url: string): string {
+  return url.replace(/\/+$/, "").replace(/\/rest\/v1$/i, "");
+}
+
 export const env: AppEnv = {
-  supabaseUrl: readEnvVar(
-    "VITE_SUPABASE_URL",
-    import.meta.env.VITE_SUPABASE_URL
+  supabaseUrl: normalizeSupabaseUrl(
+    readEnvVar("VITE_SUPABASE_URL", import.meta.env.VITE_SUPABASE_URL)
   ),
   supabasePublishableKey: readEnvVar(
     "VITE_SUPABASE_PUBLISHABLE_KEY",
