@@ -1,0 +1,8 @@
+.indicator-value {
+  font-size: 1.3rem;
+}
+
+.indicator-description {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}

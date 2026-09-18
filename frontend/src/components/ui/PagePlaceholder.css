@@ -1,0 +1,9 @@
+.page-placeholder {
+  padding: 2rem 0;
+  color: var(--color-text-muted);
+}
+
+.page-placeholder h1 {
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+}

@@ -1,0 +1,40 @@
+.signal-card {
+  align-items: flex-start;
+}
+
+.signal-badge {
+  display: inline-block;
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.03em;
+}
+
+.signal-buy {
+  background-color: #e3f6ec;
+  color: #16794d;
+}
+
+.signal-hold {
+  background-color: #fff6e0;
+  color: #9a6b00;
+}
+
+.signal-sell {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+
+.signal-detail {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 1rem;
+}
+
+.signal-timestamp {
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
