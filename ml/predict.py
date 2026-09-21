@@ -1,5 +1,5 @@
 """
-Loads the saved model and predicts on the latest data,
+Loads the saved XGBoost model and predicts on the latest data,
 outputting in the shared signals contract format.
 """
 
@@ -10,12 +10,17 @@ from train import FEATURE_COLUMNS
 
 
 def predict_latest():
-    model = joblib.load("models/baseline_rf.pkl")
+    model = joblib.load("models/baseline_xgb.pkl")
+    label_map = joblib.load("models/label_map.pkl")
+    reverse_map = {v: k for k, v in label_map.items()}
+
     df = build_feature_dataframe()
     df = df.dropna(subset=FEATURE_COLUMNS)
 
     latest = df.iloc[[-1]]
-    prediction = model.predict(latest[FEATURE_COLUMNS])[0]
+    prediction_numeric = model.predict(latest[FEATURE_COLUMNS])[0]
+    prediction = reverse_map[prediction_numeric]
+
     confidence = model.predict_proba(latest[FEATURE_COLUMNS]).max()
 
     timestamp = int(
