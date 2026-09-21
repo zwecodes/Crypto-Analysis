@@ -15,6 +15,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check data endpoints (temporary)
+        run: |
+          for url in \
+            "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=1" \
+            "https://data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=1" \
+            "https://api.binance.us/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=1" \
+            "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=3600"; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -A "Mozilla/5.0" --max-time 20 "$url" || true)
+            echo "$code  $url"
+          done
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
