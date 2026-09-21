@@ -4,9 +4,11 @@ No API key needed for this endpoint.
 """
 
 import requests
+import os
 import pandas as pd
 from datetime import *
 
+BINANCE_BASE_URL = os.getenv("BINANCE_BASE_URL", "https://api.binance.com")
 
 def get_btc_data(interval: str = "1h", limit: int = 1000) -> pd.DataFrame:
     """
@@ -19,7 +21,7 @@ def get_btc_data(interval: str = "1h", limit: int = 1000) -> pd.DataFrame:
     Returns:
         DataFrame with columns: open_time, open, high, low, close, volume
     """
-    url = "https://api.binance.com/api/v3/klines"
+    url = f"{BINANCE_BASE_URL}/api/v3/klines"
     params = {"symbol": "BTCUSDT", "interval": interval, "limit": limit}
 
     resp = requests.get(url, params=params, timeout=10)
@@ -58,7 +60,7 @@ def get_btc_data_extended(interval: str = "1h", days_back: int = 180) -> pd.Data
     Fetch a large historical range by paginating backwards in time.
     Binance limits 1000 candles per request, so we loop.
     """
-    url = "https://api.binance.com/api/v3/klines"
+    url = f"{BINANCE_BASE_URL}/api/v3/klines"
     end_time = int(datetime.now().timestamp() * 1000)
     start_time = int((datetime.now() - timedelta(days=days_back)).timestamp() * 1000)
 
