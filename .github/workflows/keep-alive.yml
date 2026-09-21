@@ -2,7 +2,7 @@ name: Keep Render Backend Awake
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,17 +11,11 @@ jobs:
     steps:
       - name: Ping backend health endpoint
         run: |
-          URL="https://crypto-analysis-backend.onrender.com/health"
+          URL="https://crypto-analysis-x1y8.onrender.com/health"
           for i in 1 2 3 4 5 6; do
-            echo "Ping attempt $i at $(date -u)"
-            code=$(curl -sS -o /tmp/health.json -w "%{http_code}" --max-time 90 "$URL" || true)
-            echo "HTTP $code"
-            if [ -f /tmp/health.json ]; then
-              cat /tmp/health.json
-              echo
-            fi
-            if [ "$code" = "200" ]; then
-              echo "Backend is awake"
+            echo "Ping attempt $i at $(date)"
+            if curl -sf --max-time 90 "$URL"; then
+              echo "Backend is awake."
               exit 0
             fi
             echo "Not ready yet, waiting 20s..."
