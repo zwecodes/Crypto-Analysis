@@ -4,3 +4,4 @@ scikit-learn
 requests
 python-dotenv
 joblib
+xgboost==3.4.1
