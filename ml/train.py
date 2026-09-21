@@ -1,6 +1,7 @@
 """
 Model training pipeline.
 """
+
 import joblib
 import os
 import pandas as pd
@@ -8,6 +9,7 @@ from features import build_feature_dataframe
 from labels import add_labels
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
+import datetime
 
 FEATURE_COLUMNS = [
     "rsi",
@@ -20,13 +22,23 @@ FEATURE_COLUMNS = [
     "bb_middle",
     "bb_upper",
     "bb_lower",
+    "rsi_lag1",
+    "macd_lag1",
+    "rsi_roc",
+    "close_roc",
 ]
 
 
 def prepare_data():
-    from data import get_btc_data
-    df = get_btc_data(limit=1000)
-    df = build_feature_dataframe()
+    # from data import get_btc_data
+
+    # df = get_btc_data(limit=1000)
+    # df = build_feature_dataframe()
+    # df = add_labels(df)
+    from data import get_btc_data_extended
+
+    df = get_btc_data_extended(days_back=180)  # ~6 months of hourly data
+    df = build_feature_dataframe(df)
     df = add_labels(df)
     df = df.dropna(subset=FEATURE_COLUMNS + ["label"])
 

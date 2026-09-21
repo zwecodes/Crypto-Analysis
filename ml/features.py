@@ -20,6 +20,14 @@ def build_feature_dataframe(df=None):
     df = compute_ema(df, 20)
     df = compute_bollinger(df)
 
+    # Lagged features — value from a few periods ago
+    df["rsi_lag1"] = df["rsi"].shift(1)
+    df["macd_lag1"] = df["macd"].shift(1)
+
+    # Rate of change — how fast is the indicator moving
+    df["rsi_roc"] = df["rsi"].diff()
+    df["close_roc"] = df["close"].pct_change()
+
     return df
 
 
