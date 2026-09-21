@@ -3,10 +3,13 @@ from fastapi.responses import JSONResponse
 from supabase import create_client
 
 from config import SUPABASE_SECRET_KEY, SUPABASE_URL
+from services.cache import market_data_cache
 
 router = APIRouter(prefix="/api/indicators", tags=["indicators"])
 
 SYMBOL = "BTC"
+ALLOWED_INTERVALS = frozenset({"1m", "5m", "15m", "1h", "4h", "1d"})
+MAX_LIMIT = 1000
 
 
 def _error(status_code: int, code: str, message: str) -> JSONResponse:
@@ -42,15 +45,23 @@ def _serialize_indicator(row: dict) -> dict:
 @router.get("/btc")
 def get_btc_indicators(
     interval: str = Query("1h"),
-    limit: int = Query(200),
-    offset: int = Query(0),
+    limit: int = Query(200, ge=1, le=MAX_LIMIT),
+    offset: int = Query(0, ge=0),
 ):
-    if not interval.strip():
+    interval = interval.strip()
+    if not interval:
         return _error(400, "BAD_REQUEST", "interval must not be empty")
-    if limit < 1:
-        return _error(400, "BAD_REQUEST", "limit must be greater than 0")
-    if offset < 0:
-        return _error(400, "BAD_REQUEST", "offset must be greater than or equal to 0")
+    if interval not in ALLOWED_INTERVALS:
+        return _error(
+            400,
+            "BAD_REQUEST",
+            f"interval must be one of: {', '.join(sorted(ALLOWED_INTERVALS))}",
+        )
+
+    cache_key = f"indicators:{SYMBOL}:{interval}:{limit}:{offset}"
+    cached = market_data_cache.get(cache_key)
+    if cached is not None:
+        return cached
 
     try:
         response = (
@@ -67,4 +78,6 @@ def get_btc_indicators(
         return _error(500, "INTERNAL_ERROR", str(exc))
 
     indicators = [_serialize_indicator(row) for row in (response.data or [])]
-    return {"symbol": SYMBOL, "interval": interval, "indicators": indicators}
+    payload = {"symbol": SYMBOL, "interval": interval, "indicators": indicators}
+    market_data_cache.set(cache_key, payload)
+    return payload
