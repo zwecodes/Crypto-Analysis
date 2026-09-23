@@ -6,6 +6,7 @@ against historical data, logs individual trades, and computes summary stats.
 from features import build_feature_dataframe
 from data import get_btc_data_extended
 from strategies import get_strategy
+from strategies import STRATEGIES
 
 
 def run_backtest(strategy_id: str, starting_balance: float = 10000.0):
@@ -56,13 +57,21 @@ def run_backtest(strategy_id: str, starting_balance: float = 10000.0):
         "trades": trades,
     }
 
+def run_all_backtests(starting_balance: float = 10000.0):
+    results = []
+    for strategy in STRATEGIES:
+        if strategy["buy_rule"] is None:
+            continue  # skip ml_signal — handled separately, not rule-based
+
+        result = run_backtest(strategy["id"], starting_balance)
+        results.append(result)
+
+    return results
 
 if __name__ == "__main__":
-    result = run_backtest("rsi_oversold")
-    print(f"Strategy: {result['strategy_id']}")
-    print(f"Total return: {result['total_return_pct']}%")
-    print(f"Num trades: {result['num_trades']}")
-    print(f"Win rate: {result['win_rate_pct']}%")
-    print(f"\nFirst 5 trades:")
-    for t in result["trades"][:5]:
-        print(t)
+    results = run_all_backtests()
+
+    print(f"{'Strategy':<20} {'Return %':>10} {'Trades':>8} {'Win Rate %':>12}")
+    print("-" * 54)
+    for r in results:
+        print(f"{r['strategy_id']:<20} {r['total_return_pct']:>10} {r['num_trades']:>8} {r['win_rate_pct']:>12}")
