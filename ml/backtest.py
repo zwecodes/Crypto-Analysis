@@ -8,6 +8,7 @@ from data import get_btc_data_extended
 from strategies import get_strategy
 from strategies import STRATEGIES
 import numpy as np 
+import json
 
 
 import numpy as np
@@ -25,6 +26,9 @@ def run_backtest(strategy_id: str, starting_balance: float = 10000.0):
     df = get_btc_data_extended(days_back=180)
     df = build_feature_dataframe(df)
     df = df.dropna().reset_index(drop=True)
+
+    start_date = str(df["open_time"].iloc[0].date())
+    end_date = str(df["open_time"].iloc[-1].date())
 
     balance = starting_balance
     balance_history = [starting_balance]
@@ -58,6 +62,8 @@ def run_backtest(strategy_id: str, starting_balance: float = 10000.0):
 
     return {
         "strategy_id": strategy_id,
+        "start_date": start_date,
+        "end_date": end_date,
         "starting_balance": starting_balance,
         "ending_balance": round(balance, 2),
         "total_return_pct": round((balance - starting_balance) / starting_balance * 100, 2),
@@ -96,6 +102,20 @@ def run_all_backtests(starting_balance: float = 10000.0):
 
     return results
 
+def save_backtest_results(results, path="backtest_results.json"):
+    """Temporary local output until DB write is wired up with Backend."""
+    with open(path, "w") as f:
+        json.dump(results, f, indent=2)
+
+# if __name__ == "__main__":
+#     results = run_all_backtests()
+
+#     print(f"{'Strategy':<20} {'Return %':>10} {'Trades':>8} {'Win %':>8} {'Sharpe':>8} {'Max DD %':>10}")
+#     print("-" * 68)
+#     for r in results:
+#         print(f"{r['strategy_id']:<20} {r['total_return_pct']:>10} {r['num_trades']:>8} "
+#               f"{r['win_rate_pct']:>8} {r['sharpe_ratio']:>8} {r['max_drawdown_pct']:>10}")
+
 if __name__ == "__main__":
     results = run_all_backtests()
 
@@ -104,3 +124,6 @@ if __name__ == "__main__":
     for r in results:
         print(f"{r['strategy_id']:<20} {r['total_return_pct']:>10} {r['num_trades']:>8} "
               f"{r['win_rate_pct']:>8} {r['sharpe_ratio']:>8} {r['max_drawdown_pct']:>10}")
+
+    save_backtest_results(results)
+    print("\nSaved to backtest_results.json")

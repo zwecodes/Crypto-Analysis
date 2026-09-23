@@ -19,3 +19,4 @@ build/
 .next/
 ml/signals_output.json
 ml/models/*.json
+ml/backtest_results.json
