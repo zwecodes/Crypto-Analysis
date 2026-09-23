@@ -7,6 +7,10 @@ from features import build_feature_dataframe
 from data import get_btc_data_extended
 from strategies import get_strategy
 from strategies import STRATEGIES
+import numpy as np 
+
+
+import numpy as np
 
 
 def run_backtest(strategy_id: str, starting_balance: float = 10000.0):
@@ -23,7 +27,8 @@ def run_backtest(strategy_id: str, starting_balance: float = 10000.0):
     df = df.dropna().reset_index(drop=True)
 
     balance = starting_balance
-    position = None  # None = not holding BTC, otherwise dict with entry info
+    balance_history = [starting_balance]
+    position = None
     trades = []
 
     for _, row in df.iterrows():
@@ -33,6 +38,7 @@ def run_backtest(strategy_id: str, starting_balance: float = 10000.0):
             exit_price = row["close"]
             pct_change = (exit_price - position["entry_price"]) / position["entry_price"]
             balance *= (1 + pct_change)
+            balance_history.append(balance)
 
             trades.append({
                 "entry_date": str(position["entry_date"]),
@@ -47,6 +53,9 @@ def run_backtest(strategy_id: str, starting_balance: float = 10000.0):
     winning_trades = [t for t in trades if t["return_pct"] > 0]
     win_rate = round(len(winning_trades) / num_trades * 100, 2) if num_trades > 0 else 0.0
 
+    sharpe_ratio = compute_sharpe_ratio(trades)
+    max_drawdown = compute_max_drawdown(balance_history)
+
     return {
         "strategy_id": strategy_id,
         "starting_balance": starting_balance,
@@ -54,8 +63,27 @@ def run_backtest(strategy_id: str, starting_balance: float = 10000.0):
         "total_return_pct": round((balance - starting_balance) / starting_balance * 100, 2),
         "num_trades": num_trades,
         "win_rate_pct": win_rate,
+        "sharpe_ratio": sharpe_ratio,
+        "max_drawdown_pct": max_drawdown,
         "trades": trades,
     }
+
+
+def compute_sharpe_ratio(trades, risk_free_rate: float = 0.0):
+    if len(trades) < 2:
+        return 0.0
+    returns = np.array([t["return_pct"] for t in trades])
+    excess_returns = returns - risk_free_rate
+    if excess_returns.std() == 0:
+        return 0.0
+    return round(float(excess_returns.mean() / excess_returns.std()), 3)
+
+
+def compute_max_drawdown(balance_history):
+    balances = np.array(balance_history)
+    running_max = np.maximum.accumulate(balances)
+    drawdowns = (balances - running_max) / running_max
+    return round(float(drawdowns.min() * 100), 2)
 
 def run_all_backtests(starting_balance: float = 10000.0):
     results = []
@@ -71,7 +99,8 @@ def run_all_backtests(starting_balance: float = 10000.0):
 if __name__ == "__main__":
     results = run_all_backtests()
 
-    print(f"{'Strategy':<20} {'Return %':>10} {'Trades':>8} {'Win Rate %':>12}")
-    print("-" * 54)
+    print(f"{'Strategy':<20} {'Return %':>10} {'Trades':>8} {'Win %':>8} {'Sharpe':>8} {'Max DD %':>10}")
+    print("-" * 68)
     for r in results:
-        print(f"{r['strategy_id']:<20} {r['total_return_pct']:>10} {r['num_trades']:>8} {r['win_rate_pct']:>12}")
+        print(f"{r['strategy_id']:<20} {r['total_return_pct']:>10} {r['num_trades']:>8} "
+              f"{r['win_rate_pct']:>8} {r['sharpe_ratio']:>8} {r['max_drawdown_pct']:>10}")
