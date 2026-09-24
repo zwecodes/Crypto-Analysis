@@ -52,6 +52,13 @@ def explain_strategy(strategy_id: str):
     return response.choices[0].message.content
 
 
+# if __name__ == "__main__":
+#     result = explain_strategy("rsi_oversold")
+#     print(result)
 if __name__ == "__main__":
-    result = explain_strategy("rsi_oversold")
-    print(result)
+    rule_based_strategies = [s for s in STRATEGIES if s["buy_rule"] is not None]
+
+    for strategy in rule_based_strategies:
+        print(f"\n=== {strategy['name']} ({strategy['id']}) ===")
+        explanation = explain_strategy(strategy["id"])
+        print(explanation)
