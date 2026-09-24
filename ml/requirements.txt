@@ -5,3 +5,5 @@ requests
 python-dotenv
 joblib
 xgboost==3.4.1
+anthropic==1.8.0
+openai==3.19.2
