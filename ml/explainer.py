@@ -4,6 +4,7 @@ Run once to generate pros/cons — not called live per-request.
 """
 
 import os
+import json
 from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -34,6 +35,9 @@ Historical backtest results (past 6 months):
 
 Write 2-3 short pros and 2-3 short cons of this strategy, based on these actual results.
 Keep each point under 15 words. Be honest about tradeoffs (e.g. high return but high risk).
+
+Respond with ONLY valid JSON in this exact format, no other text:
+{{"pros": ["point 1", "point 2", "point 3"], "cons": ["point 1", "point 2", "point 3"]}}
 """
 
 
@@ -49,16 +53,30 @@ def explain_strategy(strategy_id: str):
         messages=[{"role": "user", "content": prompt}],
     )
 
-    return response.choices[0].message.content
+    raw_text = response.choices[0].message.content.strip()
+
+    # Strip markdown code fences if the model wraps its JSON in ```json ... ```
+    if raw_text.startswith("```"):
+        raw_text = raw_text.split("```")[1]
+        raw_text = raw_text.replace("json", "", 1).strip()
+
+    try:
+        parsed = json.loads(raw_text)
+    except json.JSONDecodeError:
+        print(f"WARNING: could not parse JSON for {strategy_id}. Raw response:\n{raw_text}")
+        parsed = {"pros": [], "cons": []}
+
+    return {
+        "strategy_id": strategy_id,
+        "pros": parsed.get("pros", []),
+        "cons": parsed.get("cons", []),
+    }
 
 
-# if __name__ == "__main__":
-#     result = explain_strategy("rsi_oversold")
-#     print(result)
 if __name__ == "__main__":
     rule_based_strategies = [s for s in STRATEGIES if s["buy_rule"] is not None]
 
     for strategy in rule_based_strategies:
         print(f"\n=== {strategy['name']} ({strategy['id']}) ===")
-        explanation = explain_strategy(strategy["id"])
-        print(explanation)
+        result = explain_strategy(strategy["id"])
+        print(json.dumps(result, indent=2))
