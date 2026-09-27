@@ -46,6 +46,30 @@ def test_backtest_rejects_bad_date_order():
     assert response.json()["error"]["code"] == "BAD_REQUEST"
 
 
+def test_strategy_list_keeps_only_predefined_ids():
+    from routes.strategies import visible_strategies
+
+    rows = [
+        {"id": "test_strategy", "name": "Test", "description": "x", "pros": [], "cons": []},
+        {
+            "id": "ml_signal",
+            "name": "ML Model Signal",
+            "description": "model",
+            "pros": [],
+            "cons": [],
+        },
+        {
+            "id": "rsi_oversold",
+            "name": "RSI Oversold/Overbought",
+            "description": "rsi",
+            "pros": [],
+            "cons": [],
+        },
+    ]
+    kept = visible_strategies(rows)
+    assert [row["id"] for row in kept] == ["rsi_oversold", "ml_signal"]
+
+
 def test_strategy_ids_match_ml_contract():
     assert [item["id"] for item in STRATEGIES] == [
         "rsi_oversold",

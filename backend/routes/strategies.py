@@ -29,6 +29,12 @@ def _as_string_list(value) -> list[str]:
     return [str(item) for item in value]
 
 
+def visible_strategies(rows: list[dict]) -> list[dict]:
+    kept = [row for row in rows if row.get("id") in _ORDER]
+    kept.sort(key=lambda row: _ORDER.index(row["id"]))
+    return kept
+
+
 def serialize_strategy(row: dict) -> dict:
     return {
         "id": row["id"],
@@ -51,6 +57,5 @@ def list_strategies():
     except Exception as exc:
         return _error(500, "INTERNAL_ERROR", str(exc))
 
-    rows = response.data or []
-    rows.sort(key=lambda row: _ORDER.index(row["id"]) if row["id"] in _ORDER else len(_ORDER))
+    rows = visible_strategies(response.data or [])
     return {"strategies": [serialize_strategy(row) for row in rows]}
