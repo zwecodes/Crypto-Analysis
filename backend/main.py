@@ -10,6 +10,7 @@ from routes.backtest import router as backtest_router
 from routes.indicators import router as indicators_router
 from routes.prices import router as prices_router
 from routes.signals import router as signals_router
+from routes.strategies import router as strategies_router
 from routes.user_strategy import router as user_strategy_router
 from services.auth import get_current_user
 from services.rate_limit import RateLimitMiddleware
@@ -36,6 +37,7 @@ app.add_middleware(RateLimitMiddleware, limit=60, window_seconds=60.0)
 app.include_router(prices_router)
 app.include_router(indicators_router)
 app.include_router(signals_router)
+app.include_router(strategies_router)
 app.include_router(backtest_router)
 app.include_router(user_strategy_router)
 
