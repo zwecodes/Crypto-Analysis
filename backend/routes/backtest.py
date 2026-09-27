@@ -46,10 +46,17 @@ def _optional_float(value):
     return float(value)
 
 
+def _iso_date(value) -> str:
+    text = str(value).strip()
+    if len(text) >= 10 and text[4] == "-" and text[7] == "-":
+        return text[:10]
+    return text
+
+
 def _serialize_trade(trade: dict) -> dict:
     return {
-        "entry_date": str(trade.get("entry_date")),
-        "exit_date": str(trade.get("exit_date")),
+        "entry_date": _iso_date(trade.get("entry_date")),
+        "exit_date": _iso_date(trade.get("exit_date")),
         "entry_price": float(trade["entry_price"]),
         "exit_price": float(trade["exit_price"]),
         "return_pct": float(trade["return_pct"]),
