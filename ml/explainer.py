@@ -5,9 +5,10 @@ Run once to generate pros/cons — not called live per-request.
 
 import os
 import json
+import time
 from pathlib import Path
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, APIError, APITimeoutError, RateLimitError
 from strategies import STRATEGIES
 from backtest import run_backtest
 
@@ -18,6 +19,8 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
     api_key=os.getenv("GROQ_API_KEY"),
 )
+
+CACHE_PATH = "strategy_explanations.json"
 
 
 def build_prompt(strategy, backtest_result):
@@ -41,21 +44,42 @@ Respond with ONLY valid JSON in this exact format, no other text:
 """
 
 
+def call_llm_with_retry(prompt, max_retries=3):
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = client.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                max_tokens=800,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return response.choices[0].message.content.strip()
+
+        except RateLimitError:
+            wait = 5 * attempt
+            print(f"Rate limited, retrying in {wait}s (attempt {attempt}/{max_retries})...")
+            time.sleep(wait)
+
+        except APITimeoutError:
+            print(f"Request timed out, retrying (attempt {attempt}/{max_retries})...")
+
+        except APIError as e:
+            print(f"API error: {e}. Retrying (attempt {attempt}/{max_retries})...")
+            time.sleep(2)
+
+    print(f"Failed after {max_retries} attempts — giving up on this strategy.")
+    return None
+
+
 def explain_strategy(strategy_id: str):
     strategy = next(s for s in STRATEGIES if s["id"] == strategy_id)
     backtest_result = run_backtest(strategy_id)
 
     prompt = build_prompt(strategy, backtest_result)
+    raw_text = call_llm_with_retry(prompt)
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        max_tokens=800,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    if raw_text is None:
+        return {"strategy_id": strategy_id, "pros": [], "cons": [], "error": "LLM call failed"}
 
-    raw_text = response.choices[0].message.content.strip()
-
-    # Strip markdown code fences if the model wraps its JSON in ```json ... ```
     if raw_text.startswith("```"):
         raw_text = raw_text.split("```")[1]
         raw_text = raw_text.replace("json", "", 1).strip()
@@ -73,10 +97,29 @@ def explain_strategy(strategy_id: str):
     }
 
 
-if __name__ == "__main__":
+def generate_all_explanations(force_refresh=False):
+    if not force_refresh and os.path.exists(CACHE_PATH):
+        print(f"Using cached explanations from {CACHE_PATH} (pass force_refresh=True to regenerate)")
+        with open(CACHE_PATH) as f:
+            return json.load(f)
+
     rule_based_strategies = [s for s in STRATEGIES if s["buy_rule"] is not None]
+    results = []
 
     for strategy in rule_based_strategies:
-        print(f"\n=== {strategy['name']} ({strategy['id']}) ===")
+        print(f"Generating explanation for {strategy['id']}...")
         result = explain_strategy(strategy["id"])
-        print(json.dumps(result, indent=2))  
+        results.append(result)
+
+    with open(CACHE_PATH, "w") as f:
+        json.dump(results, f, indent=2)
+    print(f"\nSaved all explanations to {CACHE_PATH}")
+
+    return results
+
+
+if __name__ == "__main__":
+    results = generate_all_explanations()
+    for r in results:
+        print(f"\n=== {r['strategy_id']} ===")
+        print(json.dumps(r, indent=2))
