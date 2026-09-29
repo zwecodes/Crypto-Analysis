@@ -79,4 +79,4 @@ if __name__ == "__main__":
     for strategy in rule_based_strategies:
         print(f"\n=== {strategy['name']} ({strategy['id']}) ===")
         result = explain_strategy(strategy["id"])
-        print(json.dumps(result, indent=2))
+        print(json.dumps(result, indent=2))  
