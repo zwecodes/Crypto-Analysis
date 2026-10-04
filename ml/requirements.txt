@@ -7,3 +7,6 @@ joblib
 xgboost==3.4.1
 anthropic==1.8.0
 openai==3.19.2
+supabase==2.32.0
+supabase-auth==2.32.0
+supabase-functions==2.32.0
