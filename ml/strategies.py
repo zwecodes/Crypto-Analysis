@@ -10,6 +10,8 @@ STRATEGIES = [
         "description": "Buys when RSI < 30, sells when RSI > 70",
         "buy_rule": lambda row: row["rsi"] < 30,
         "sell_rule": lambda row: row["rsi"] > 70,
+        "buy_criteria": {"indicator": "rsi", "operator": "<", "value": 30},
+        "sell_criteria": {"indicator": "rsi", "operator": ">", "value": 70},
     },
     {
         "id": "ma_crossover",
@@ -17,6 +19,16 @@ STRATEGIES = [
         "description": "Buys when the 20-period EMA crosses above the 50-period SMA, sells on the reverse",
         "buy_rule": lambda row: row["ema_20"] > row["sma_50"],
         "sell_rule": lambda row: row["ema_20"] < row["sma_50"],
+        "buy_criteria": {
+            "indicator": "ema_20",
+            "operator": ">",
+            "compare_to": "sma_50",
+        },
+        "sell_criteria": {
+            "indicator": "ema_20",
+            "operator": "<",
+            "compare_to": "sma_50",
+        },
     },
     {
         "id": "macd_momentum",
@@ -24,6 +36,16 @@ STRATEGIES = [
         "description": "Buys when MACD crosses above its signal line, sells on the reverse",
         "buy_rule": lambda row: row["macd"] > row["macd_signal"],
         "sell_rule": lambda row: row["macd"] < row["macd_signal"],
+        "buy_criteria": {
+            "indicator": "macd",
+            "operator": ">",
+            "compare_to": "macd_signal",
+        },
+        "sell_criteria": {
+            "indicator": "macd",
+            "operator": "<",
+            "compare_to": "macd_signal",
+        },
     },
     {
         "id": "bollinger_bounce",
@@ -31,13 +53,25 @@ STRATEGIES = [
         "description": "Buys when price touches the lower band, sells when it touches the upper band",
         "buy_rule": lambda row: row["close"] <= row["bb_lower"],
         "sell_rule": lambda row: row["close"] >= row["bb_upper"],
+        "buy_criteria": {
+            "indicator": "close",
+            "operator": "<=",
+            "compare_to": "bb_lower",
+        },
+        "sell_criteria": {
+            "indicator": "close",
+            "operator": ">=",
+            "compare_to": "bb_upper",
+        },
     },
     {
         "id": "ml_signal",
         "name": "ML Model Signal",
         "description": "Uses the trained XGBoost classifier's BUY/HOLD/SELL prediction directly",
-        "buy_rule": None,  # handled separately via predict.py, not a simple row-based rule
+        "buy_rule": None,
         "sell_rule": None,
+        "buy_criteria": None,
+        "sell_criteria": None,
     },
 ]
 
