@@ -8,6 +8,8 @@ on:
 jobs:
   retrain-pipeline:
     runs-on: ubuntu-latest
+    env:
+      BINANCE_BASE_URL: https://data-api.binance.vision
     defaults:
       run:
         working-directory: ml
@@ -26,12 +28,20 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Pull data, retrain and evaluate
-        env:
-          BINANCE_BASE_URL: https://data-api.binance.vision
         run: python -m train
 
       - name: Show model files
         run: ls -l models && cat models/metrics.json
+
+      - name: Compare with current model (none stored yet)
+        id: compare
+        run: python compare_models.py --candidate-dir models --current-dir current_model --margin 0.02 --title "Candidate vs current model"
+
+      - name: TEST - candidate against a copy of itself
+        run: |
+          cp -r models current_model_test
+          python compare_models.py --candidate-dir models --current-dir current_model_test --margin 0.02 --title "TEST margin 0.02 (expect keep)"
+          python compare_models.py --candidate-dir models --current-dir current_model_test --margin -1 --title "TEST margin -1 (expect promote)"
 
       - name: Upload candidate model
         uses: actions/upload-artifact@v4
