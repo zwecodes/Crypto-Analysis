@@ -4,12 +4,20 @@ on:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
+    inputs:
+      margin:
+        description: "Minimum macro_f1 improvement needed to promote (use -1 to force a promote when testing)"
+        default: "0.02"
 
 jobs:
   retrain-pipeline:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       BINANCE_BASE_URL: https://data-api.binance.vision
+      GH_TOKEN: ${{ github.token }}
+      MARGIN: ${{ inputs.margin || '0.02' }}
     defaults:
       run:
         working-directory: ml
@@ -33,15 +41,35 @@ jobs:
       - name: Show model files
         run: ls -l models && cat models/metrics.json
 
-      - name: Compare with current model (none stored yet)
-        id: compare
-        run: python compare_models.py --candidate-dir models --current-dir current_model --margin 0.02 --title "Candidate vs current model"
-
-      - name: TEST - candidate against a copy of itself
+      - name: Download current production model
         run: |
-          cp -r models current_model_test
-          python compare_models.py --candidate-dir models --current-dir current_model_test --margin 0.02 --title "TEST margin 0.02 (expect keep)"
-          python compare_models.py --candidate-dir models --current-dir current_model_test --margin -1 --title "TEST margin -1 (expect promote)"
+          mkdir -p current_model
+          gh release download production-model -R "$GITHUB_REPOSITORY" \
+            --pattern "baseline_xgb.pkl" --pattern "label_map.pkl" --pattern "metrics.json" \
+            --dir current_model || echo "No production model release yet"
+          ls -l current_model
+
+      - name: Compare candidate with production model
+        id: compare
+        run: python compare_models.py --candidate-dir models --current-dir current_model --margin "$MARGIN" --title "Candidate vs production model"
+
+      - name: Promote candidate to production
+        if: steps.compare.outputs.promote == 'true'
+        run: |
+          if ! gh release view production-model -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create production-model -R "$GITHUB_REPOSITORY" \
+              --title "Production model" \
+              --notes "Current production model, updated automatically by the retraining workflow." \
+              --latest=false
+          fi
+          gh release upload production-model \
+            models/baseline_xgb.pkl models/label_map.pkl models/metrics.json \
+            -R "$GITHUB_REPOSITORY" --clobber
+          echo "Promoted the candidate to production model." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep current production model
+        if: steps.compare.outputs.promote != 'true'
+        run: echo "Kept the current production model." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload candidate model
         uses: actions/upload-artifact@v4
@@ -51,6 +79,7 @@ jobs:
             ml/models/baseline_xgb.pkl
             ml/models/label_map.pkl
             ml/models/metrics.json
+            ml/models/decision.json
           if-no-files-found: error
 
       - name: Log result
