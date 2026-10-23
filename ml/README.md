@@ -1,43 +1,49 @@
 # ML Module
 
-AI/ML pipeline for the BTC Trading Analysis Platform — Saw Htet Arkar.
+AI/ML pipeline for the BTC Trading Analysis Platform.
 
 ## Setup
 
 1. `python -m venv .venv`
-2. Activate it:
-   - Windows: `.venv\Scripts\activate`
-   - Mac/Linux: `source .venv/bin/activate`
+2. Activate it (`source .venv/Scripts/activate` on Git Bash, `.venv\Scripts\activate` on Windows)
 3. `pip install -r requirements.txt`
+4. Put `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `GROQ_API_KEY` in the repo-root `.env` (never commit it)
 
-## Run the full pipeline
+Run everything from inside `ml/` with `python -m <module>`.
 
-1. `python -m train` — fetches live BTC data, builds features, trains the model, evaluates it, and saves it to `models/baseline_rf.pkl`
-2. `python -m predict` — loads the saved model, predicts on the latest data, and outputs a signal matching the shared API contract (`symbol`, `signal`, `confidence`, `timestamp`)
+## Pipeline
+
+| Command | What it does |
+|---|---|
+| `python -m train` | Fetches 180 days of hourly BTC data, builds features, trains RandomForest and XGBoost, saves XGBoost to `models/` plus `metrics.json` (macro F1, accuracy) |
+| `python -m validate` | Scores the saved model on the last 14 days |
+| `python -m predict` | Latest closed-candle signal in the API contract shape |
+| `python -m backtest` | Backtests the 4 rule-based strategies (return, win rate, Sharpe, max drawdown) |
+| `python -m explainer` | LLM-generated pros/cons per strategy (Groq), cached in `strategy_explanations.json` |
+| `python -m update_strategy_explanations` | Writes pros/cons into the Supabase `strategies` table |
+| `python -m update_backtest_results` | Writes backtest results into `backtest_results` |
+| `python -m update_signals` | Writes the latest signal into `signals` |
 
 ## Files
 
-- `data.py` — fetches live BTC OHLCV data from Binance
-- `indicators/` — RSI, MACD, Moving Averages (SMA/EMA), Bollinger Bands
-- `features.py` — combines all indicators into one model-ready feature set
-- `labels.py` — labels historical rows BUY/HOLD/SELL based on future price movement
-- `train.py` — chronological train/test split, trains a RandomForestClassifier, evaluates with precision/recall/F1 and a confusion matrix
-- `predict.py` — loads the saved model and outputs the latest signal in the contract format
+- `data.py`: Binance klines (base URL from `BINANCE_BASE_URL`)
+- `indicators/`: RSI, MACD, SMA/EMA, Bollinger Bands
+- `features.py`: indicators plus scale-free features
+- `labels.py`: BUY/HOLD/SELL labels from future price movement
+- `strategies.py`: 5 strategies with Python rules and structured `buy_criteria`/`sell_criteria`
+- `train.py`, `predict.py`, `validate.py`, `backtest.py`, `explainer.py`, `update_*.py`
 
-## Current model status (baseline)
+## Model status
 
-- Accuracy varies run-to-run (roughly 35-45%) due to limited historical data size and crypto market volatility
-- Class imbalance (HOLD dominates) addressed using `class_weight="balanced"`
-- BUY recall is reasonably strong (~60%); SELL recall is still weak — documented limitation, candidate for improvement via more historical data and additional features (lagged/rate-of-change indicators)
+- XGBoost with 12 scale-free features. Raw price-level features were removed because they made predictions collapse to one class on recent data.
+- Chronological 80/20 split. Macro F1 is about 0.30 on the test set and about 0.31 on the last 14 days.
+- Honest limitation: the model shows no demonstrated edge on BUY/SELL beyond the class mix, and `confidence` is not a calibrated probability.
+- Backtests don't include fees or slippage, and results shift with the data window.
 
 ## Output contract
 
-Matches `/api/signals/btc` in the team's API contract doc:
+Matches `/api/signals/btc`:
+
 ```json
-{
-  "symbol": "BTC",
-  "signal": "BUY",
-  "confidence": 0.78,
-  "timestamp": 1756339200
-}
+{"symbol": "BTC", "signal": "HOLD", "confidence": 0.78, "timestamp": 1792731600}
 ```
