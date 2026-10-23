@@ -15,10 +15,10 @@ from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
 
 FEATURE_COLUMNS = [
-    "rsi", "macd", "macd_signal", "macd_histogram",
-    "sma_20", "sma_50", "ema_20",
-    "bb_middle", "bb_upper", "bb_lower",
-    "rsi_lag1", "macd_lag1", "rsi_roc", "close_roc",
+    "rsi", "rsi_lag1", "rsi_roc", "close_roc",
+    "macd_pct", "macd_signal_pct", "macd_hist_pct",
+    "dist_sma20", "dist_sma50", "ema_sma_gap",
+    "bb_pct_b", "bb_width",
 ]
 
 
