@@ -20,6 +20,9 @@ jobs:
       - name: Run tests
         working-directory: ./backend
         run: pytest
+      
+      - name: Run alert rule tests
+        run: pytest alerts
 
   frontend:
     runs-on: ubuntu-latest
