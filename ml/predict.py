@@ -17,7 +17,8 @@ def predict_latest():
     df = build_feature_dataframe()
     df = df.dropna(subset=FEATURE_COLUMNS)
 
-    latest = df.iloc[[-1]]
+    # latest = df.iloc[[-1]]
+    latest = df.iloc[[-2]]
     prediction_numeric = model.predict(latest[FEATURE_COLUMNS])[0]
     prediction = reverse_map[prediction_numeric]
 
