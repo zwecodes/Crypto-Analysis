@@ -28,6 +28,16 @@ def build_feature_dataframe(df=None):
     df["rsi_roc"] = df["rsi"].diff()
     df["close_roc"] = df["close"].pct_change()
 
+    # Scale-free features: don't depend on the BTC price level
+    df["macd_pct"] = df["macd"] / df["close"]
+    df["macd_signal_pct"] = df["macd_signal"] / df["close"]
+    df["macd_hist_pct"] = df["macd_histogram"] / df["close"]
+    df["dist_sma20"] = df["close"] / df["sma_20"] - 1
+    df["dist_sma50"] = df["close"] / df["sma_50"] - 1
+    df["ema_sma_gap"] = df["ema_20"] / df["sma_50"] - 1
+    df["bb_pct_b"] = (df["close"] - df["bb_lower"]) / (df["bb_upper"] - df["bb_lower"])
+    df["bb_width"] = (df["bb_upper"] - df["bb_lower"]) / df["bb_middle"]
+
     return df
 
 
