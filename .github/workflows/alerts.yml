@@ -2,6 +2,9 @@ name: Alerts
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - infra/alert-dry-run
 
 jobs:
   alerts:
