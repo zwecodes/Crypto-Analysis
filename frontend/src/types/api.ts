@@ -66,12 +66,13 @@ export interface Trade {
 }
 
 /** Shape flagged as unstable in the contract — confirm with ML before relying on exact fields. */
+
 export interface BacktestResult {
   strategy_id: string;
-  start_date: string; // ISO date
-  end_date: string; // ISO date
-  total_return_pct: number;
-  win_rate_pct: number;
+  start_date: string;
+  end_date: string;
+  total_return_pct: number | null;
+  win_rate_pct: number | null;
   num_trades: number;
   trades: Trade[];
 }
