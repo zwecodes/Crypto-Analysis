@@ -79,16 +79,41 @@ def _serialize_row(row: dict) -> dict:
     }
 
 
-def _empty_result(strategy_id: str, start: date, end: date) -> dict:
-    return {
-        "strategy_id": strategy_id,
-        "start_date": start.isoformat(),
-        "end_date": end.isoformat(),
-        "total_return_pct": None,
-        "win_rate_pct": None,
-        "num_trades": 0,
-        "trades": [],
-    }
+NO_MATCHING_BACKTEST = "NO_MATCHING_BACKTEST"
+
+
+def _available_ranges(client, strategy_id: str, limit: int = 3) -> list[tuple[str, str]]:
+    """Newest cached (start_date, end_date) windows for a strategy, for the error message."""
+    try:
+        rows = (
+            client.table("backtest_results")
+            .select("start_date, end_date")
+            .eq("strategy_id", strategy_id)
+            .order("computed_at", desc=True)
+            .limit(limit)
+            .execute()
+        ).data or []
+    except Exception:
+        return []  # never turn a clean "no match" into a 500 just for the hint
+
+    ranges: list[tuple[str, str]] = []
+    for row in rows:
+        pair = (_iso_date(row["start_date"]), _iso_date(row["end_date"]))
+        if pair not in ranges:
+            ranges.append(pair)
+    return ranges
+
+
+def _no_match_message(client, strategy_id: str, start: date, end: date) -> str:
+    message = (
+        f"No backtest result for '{strategy_id}' from "
+        f"{start.isoformat()} to {end.isoformat()}."
+    )
+    ranges = _available_ranges(client, strategy_id)
+    if not ranges:
+        return message + " No backtest results have been computed for this strategy yet."
+    listed = "; ".join(f"{a} to {b}" for a, b in ranges)
+    return f"{message} Available ranges: {listed}."
 
 
 @router.get("/{strategy_id}")
@@ -125,7 +150,7 @@ def get_backtest(
                 404, "NOT_FOUND", f"Strategy '{strategy_id}' not found"
             )
 
-        # Exact match on requested window first.
+        # Look up the cached result for exactly this window.
         exact = (
             client.table("backtest_results")
             .select(
@@ -141,22 +166,14 @@ def get_backtest(
         if exact.data:
             return _serialize_row(exact.data[0])
 
-        # Fallback: newest cached result for this strategy (ML may use different windows).
-        latest = (
-            client.table("backtest_results")
-            .select(
-                "strategy_id, start_date, end_date, "
-                "total_return_pct, win_rate_pct, num_trades, trades"
-            )
-            .eq("strategy_id", strategy_id)
-            .order("computed_at", desc=True)
-            .limit(1)
-            .execute()
+        # Only an exact match on the requested window is returned. A different
+        # window must never be returned silently (the frontend would show a
+        # date range the user did not select).
+        raise _http_error(
+            404,
+            NO_MATCHING_BACKTEST,
+            _no_match_message(client, strategy_id, start, end),
         )
-        if latest.data:
-            return _serialize_row(latest.data[0])
-
-        return _empty_result(strategy_id, start, end)
     except HTTPException:
         raise
     except Exception as exc:
