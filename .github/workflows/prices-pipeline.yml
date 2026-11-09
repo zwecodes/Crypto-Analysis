@@ -28,4 +28,5 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          BINANCE_BASE_URL: https://data-api.binance.vision
         run: python services/data_pipeline.py

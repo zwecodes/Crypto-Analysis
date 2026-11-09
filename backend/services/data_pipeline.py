@@ -1,5 +1,6 @@
 """Fetch BTC OHLCV candles from Binance and upsert them into Supabase prices."""
 
+import os
 import sys
 from pathlib import Path
 
@@ -12,17 +13,22 @@ if str(BACKEND_DIR) not in sys.path:
 
 from config import SUPABASE_SECRET_KEY, SUPABASE_URL
 
-BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines"
+DEFAULT_BINANCE_BASE_URL = "https://api.binance.com"
 BINANCE_SYMBOL = "BTCUSDT"
 DB_SYMBOL = "BTC"
 INTERVAL = "1h"
 LIMIT = 500
 
 
+def get_klines_url() -> str:
+    base_url = os.environ.get("BINANCE_BASE_URL", DEFAULT_BINANCE_BASE_URL).rstrip("/")
+    return f"{base_url}/api/v3/klines"
+
+
 def fetch_binance_klines() -> list:
     try:
         response = httpx.get(
-            BINANCE_KLINES_URL,
+            get_klines_url(),
             params={
                 "symbol": BINANCE_SYMBOL,
                 "interval": INTERVAL,
