@@ -65,6 +65,7 @@ def _unix_seconds(df: pd.DataFrame) -> pd.Series:
 
 def build_rows(limit: int = 1000, rows: int = 200):
     df = get_btc_data(interval=INTERVAL, limit=limit)
+    df = df.iloc[:-1]
     base_cols = list(df.columns)
     ts = _unix_seconds(df)
     sma50 = compute_sma(df, period=50)
