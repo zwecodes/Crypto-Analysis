@@ -3,8 +3,8 @@ import "./MarketSummaryCard.css";
 
 interface MarketSummaryCardProps {
   data: MarketSummary;
-  /** Formatted display string for the newest candle's timestamp (Task 3, Step 11). Optional — omitted while mock data was in use. */
-  lastUpdated?: string;
+ /** Formatted timestamp of the newest BTC price candle. */
+lastUpdated?: string;
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {

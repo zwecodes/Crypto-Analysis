@@ -7,10 +7,9 @@ interface IndicatorCardProps {
 }
 
 /**
- * Displays one indicator's latest mock value + a short label (e.g.
- * "Neutral", "Bullish"). Real indicator calculations (RSI/MACD/SMA) are
- * explicitly out of scope for Task 2 — this only renders whatever
- * IndicatorSummaryItem it's given.
+ * Displays the latest technical indicator value and its description.
+ * Indicator values are calculated by the backend and passed through
+ * DashboardPage.
  */
 export function IndicatorCard({ item }: IndicatorCardProps) {
   return (

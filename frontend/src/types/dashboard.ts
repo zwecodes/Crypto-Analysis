@@ -1,10 +1,8 @@
 import type { Candle } from "./api";
 
 /**
- * Dashboard-specific types. `Signal` and `Candle` from ./api are reused
- * as-is where the mock data matches a real future response shape exactly.
- * These types below have no backend-contract equivalent (yet) — they
- * represent UI-level summaries/derived values, not raw API responses.
+ * Dashboard-specific types for UI-level summaries and derived values.
+ * Candle is reused from the backend API types.
  */
 
 export interface MarketSummary {
@@ -25,8 +23,8 @@ export interface IndicatorSummaryItem {
 
 export interface MarketStatus {
   pair: string;
-  status: "Active" | "Inactive";
-  lastUpdated: string; // ISO datetime string
+  status: "Connected" | "Unavailable";
+  lastUpdated: string | null;
 }
 
 /** Minimal shape the chart needs from a Candle — reused rather than duplicated. */

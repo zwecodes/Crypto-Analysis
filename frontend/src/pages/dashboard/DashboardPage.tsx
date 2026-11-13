@@ -10,11 +10,11 @@ import { ErrorMessage } from "../../components/ui/ErrorMessage";
 import { getBtcPrices, deriveMarketSummary } from "../../services/priceService";
 import { getBtcIndicators } from "../../services/indicatorService";
 import { getBtcSignal } from "../../services/signalService";
-import { mockMarketStatus } from "../../data/dashboardMockData";
 import type {
   MarketSummary,
   ChartPoint,
   IndicatorSummaryItem,
+  MarketStatus,
 } from "../../types/dashboard";
 import type { IndicatorPoint, Signal } from "../../types/api";
 import "./DashboardPage.css";
@@ -109,6 +109,13 @@ export function DashboardPage() {
   const [signalState, setSignalState] = useState<SignalState>({
     status: "loading",
   });
+
+  const marketStatus: MarketStatus = {
+    pair: "BTC/USD",
+    status: priceState.status === "ready" ? "Connected" : "Unavailable",
+    lastUpdated:
+      priceState.status === "ready" ? priceState.lastUpdated : null,
+  };
 
   const [retryCount, setRetryCount] = useState(0);
 
@@ -302,7 +309,6 @@ export function DashboardPage() {
         <span className="dashboard-section-label-text">
           ML Trading Signal & Market Status
         </span>
-        <span className="dashboard-demo-badge">Mock data</span>
       </div>
 
       {signalState.status === "loading" && (
@@ -325,7 +331,7 @@ export function DashboardPage() {
           <SignalCard signal={signalState.signal} />
         )}
 
-        <MarketStatusCard status={mockMarketStatus} />
+        <MarketStatusCard status={marketStatus} />
       </div>
     </div>
   );
