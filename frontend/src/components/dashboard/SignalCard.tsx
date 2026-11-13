@@ -1,3 +1,4 @@
+
 import type { Signal } from "../../types/api";
 import "./DashboardCard.css";
 import "./SignalCard.css";
@@ -13,17 +14,26 @@ const SIGNAL_BADGE_CLASS: Record<Signal["signal"], string> = {
 };
 
 export function SignalCard({ signal }: SignalCardProps) {
-  const confidencePercent = Math.round(signal.confidence * 100);
-  const timestampLabel = new Date(signal.timestamp * 1000).toLocaleString();
+  const confidencePercent =
+    signal.confidence === null
+      ? "Unavailable"
+      : `${(signal.confidence * 100).toFixed(1)}%`;
+
+  const timestampLabel =
+    signal.timestamp === null
+      ? "Unavailable"
+      : new Date(signal.timestamp * 1000).toLocaleString();
 
   return (
     <div className="dashboard-card signal-card">
       <span className="dashboard-card-title">Current Signal</span>
-      <span className={SIGNAL_BADGE_CLASS[signal.signal]}>{signal.signal}</span>
+      <span className={SIGNAL_BADGE_CLASS[signal.signal]}>
+        {signal.signal}
+      </span>
 
       <div className="signal-detail">
         <span className="dashboard-card-label">Confidence</span>
-        <span className="dashboard-card-value">{confidencePercent}%</span>
+        <span className="dashboard-card-value">{confidencePercent}</span>
       </div>
 
       <div className="signal-detail">

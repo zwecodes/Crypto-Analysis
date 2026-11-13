@@ -23,12 +23,18 @@ export interface PricesResponse {
 }
 
 export interface IndicatorPoint {
-  timestamp: number; // unix epoch seconds
-  rsi: number;
-  macd: number;
-  macd_signal: number;
-  sma_20: number;
-  sma_50: number;
+  timestamp: number;
+  rsi: number | null;
+  macd: number | null;
+  macd_signal: number | null;
+  sma_20: number | null;
+  sma_50: number | null;
+}
+
+export interface IndicatorsResponse {
+  symbol: string;
+  interval: string;
+  indicators: IndicatorPoint[];
 }
 
 export interface IndicatorsResponse {
@@ -53,8 +59,8 @@ export interface StrategiesResponse {
 export interface Signal {
   symbol: string;
   signal: "BUY" | "HOLD" | "SELL";
-  confidence: number;
-  timestamp: number;
+  confidence: number | null;
+  timestamp: number | null;
 }
 
 export interface Trade {
