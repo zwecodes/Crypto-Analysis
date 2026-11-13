@@ -8,14 +8,19 @@ import { ErrorMessage } from "../../components/ui/ErrorMessage";
 import { Spinner } from "../../components/ui/Spinner";
 import "./BacktestResultsPage.css";
 
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 401) {
       return "Your session may have expired. Please sign in again.";
     }
 
-    if (error.status === 404) {
+    if (error.code === "NOT_FOUND") {
       return "This strategy was not found.";
+    }
+
+    if (error.code === "NO_MATCHING_BACKTEST") {
+      return error.message;
     }
 
     return error.message;
@@ -27,6 +32,7 @@ function getErrorMessage(error: unknown): string {
 
   return "Unable to load backtest results. Please try again.";
 }
+
 
 function formatPercent(value: number | null): string {
   return value === null ? "—" : `${value.toFixed(2)}%`;

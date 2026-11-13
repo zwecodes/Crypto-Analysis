@@ -31,10 +31,8 @@ function formatPrice(value: number): string {
 }
 
 /**
- * Renders mock BTC price data only (Task 2 scope). Takes a plain
- * ChartPoint[] (timestamp + close price) — the same minimal shape a real
- * Candle[] from GET /api/prices/btc would provide, so swapping in real data
- * later means changing only the caller, not this component.
+ * Renders BTC price data received from the backend.
+ * Accepts ChartPoint[] containing timestamps and closing prices.
  */
 export function BtcPriceChart({ data }: BtcPriceChartProps) {
   const chartRows: ChartRow[] = data.map((point) => ({

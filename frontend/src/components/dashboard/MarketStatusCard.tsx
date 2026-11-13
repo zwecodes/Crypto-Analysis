@@ -1,3 +1,4 @@
+
 import type { MarketStatus } from "../../types/dashboard";
 import "./DashboardCard.css";
 import "./MarketStatusCard.css";
@@ -7,15 +8,18 @@ interface MarketStatusCardProps {
 }
 
 export function MarketStatusCard({ status }: MarketStatusCardProps) {
-  const lastUpdatedLabel = new Date(status.lastUpdated).toLocaleString();
+  const lastUpdatedLabel = status.lastUpdated
+    ? new Date(status.lastUpdated).toLocaleString()
+    : "Unavailable";
 
   return (
     <div className="dashboard-card market-status-card">
       <span className="dashboard-card-title">Market Status</span>
       <span className="dashboard-card-value">{status.pair}</span>
+
       <span
         className={
-          status.status === "Active"
+          status.status === "Connected"
             ? "market-status-badge market-status-active"
             : "market-status-badge market-status-inactive"
         }
