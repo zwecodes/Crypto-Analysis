@@ -89,7 +89,7 @@ def _available_ranges(client, strategy_id: str, limit: int = 3) -> list[tuple[st
             client.table("backtest_results")
             .select("start_date, end_date")
             .eq("strategy_id", strategy_id)
-            .order("computed_at", desc=True)
+            .order("end_date", desc=True)
             .limit(limit)
             .execute()
         ).data or []
