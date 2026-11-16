@@ -178,3 +178,62 @@ def get_backtest(
         raise
     except Exception as exc:
         raise _http_error(500, "INTERNAL_ERROR", str(exc)) from exc
+
+
+
+@router.get("/{strategy_id}/ranges")
+def get_backtest_ranges(strategy_id: str):
+    """Fixed start date plus the first and last stored end date for a strategy."""
+    strategy_id = strategy_id.strip()
+    if not strategy_id:
+        raise _http_error(400, "BAD_REQUEST", "strategy_id must not be empty")
+
+    try:
+        client = _get_client()
+
+        strategy = (
+            client.table("strategies")
+            .select("id")
+            .eq("id", strategy_id)
+            .limit(1)
+            .execute()
+        )
+        if not strategy.data:
+            raise _http_error(
+                404, "NOT_FOUND", f"Strategy '{strategy_id}' not found"
+            )
+
+        newest = (
+            client.table("backtest_results")
+            .select("start_date, end_date")
+            .eq("strategy_id", strategy_id)
+            .order("end_date", desc=True)
+            .limit(1)
+            .execute()
+        ).data or []
+        if not newest:
+            raise _http_error(
+                404,
+                NO_MATCHING_BACKTEST,
+                f"No backtest results have been computed for '{strategy_id}' yet.",
+            )
+
+        start = _iso_date(newest[0]["start_date"])
+        max_end = _iso_date(newest[0]["end_date"])
+
+        oldest = (
+            client.table("backtest_results")
+            .select("end_date")
+            .eq("strategy_id", strategy_id)
+            .eq("start_date", start)
+            .order("end_date")
+            .limit(1)
+            .execute()
+        ).data or []
+        min_end = _iso_date(oldest[0]["end_date"]) if oldest else max_end
+
+        return {"start_date": start, "min_end_date": min_end, "max_end_date": max_end}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise _http_error(500, "INTERNAL_ERROR", str(exc)) from exc
