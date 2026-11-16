@@ -7,6 +7,20 @@ export interface BacktestQuery {
   end_date?: string;
 }
 
+export interface BacktestRanges {
+  start_date: string;
+  min_end_date: string;
+  max_end_date: string;
+}
+
+export async function getBacktestRanges(
+  strategyId: string
+): Promise<BacktestRanges> {
+  const path = `/api/backtest/${encodeURIComponent(strategyId)}/ranges`;
+
+  return apiRequest<BacktestRanges>(path);
+}
+
 export async function getBacktestResult(
   strategyId: string,
   query: BacktestQuery = {}
