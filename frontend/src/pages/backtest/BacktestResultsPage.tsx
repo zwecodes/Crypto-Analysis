@@ -1,16 +1,16 @@
 
 import { useEffect, useState } from "react";
 import { ApiError } from "../../services/apiClient";
-import { getBacktestResult } from "../../services/backtestService";
-import { getBtcPrices } from "../../services/priceService";
+import {
+  getBacktestRanges,
+  getBacktestResult,
+} from "../../services/backtestService";
+import type { BacktestRanges } from "../../services/backtestService";
 import { getStrategies } from "../../services/strategyService";
 import type { BacktestResult, Strategy } from "../../types/api";
 import { ErrorMessage } from "../../components/ui/ErrorMessage";
 import { Spinner } from "../../components/ui/Spinner";
 import "./BacktestResultsPage.css";
-
-const FIXED_START_DATE = "2026-03-31";
-const MIN_END_DATE = "2026-04-30";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -23,7 +23,7 @@ function getErrorMessage(error: unknown): string {
     }
 
     if (error.code === "NO_MATCHING_BACKTEST") {
-      return error.message;
+      return "No backtest results are available for this strategy and date range.";
     }
 
     return error.message;
@@ -34,10 +34,6 @@ function getErrorMessage(error: unknown): string {
   }
 
   return "Unable to load backtest results. Please try again.";
-}
-
-function formatCandleDate(timestamp: number): string {
-  return new Date(timestamp * 1000).toISOString().slice(0, 10);
 }
 
 function formatPercent(value: number | null): string {
@@ -55,64 +51,18 @@ function formatPrice(value: number): string {
 export function BacktestResultsPage() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [strategyId, setStrategyId] = useState("");
+
+  const [ranges, setRanges] = useState<BacktestRanges | null>(null);
   const [endDate, setEndDate] = useState("");
-  const [latestDate, setLatestDate] = useState("");
   const [result, setResult] = useState<BacktestResult | null>(null);
 
   const [loadingStrategies, setLoadingStrategies] = useState(true);
-  const [loadingLatestDate, setLoadingLatestDate] = useState(true);
+  const [loadingRanges, setLoadingRanges] = useState(false);
   const [loadingResult, setLoadingResult] = useState(false);
 
   const [error, setError] = useState("");
-  const [dateError, setDateError] = useState("");
+  const [rangeMessage, setRangeMessage] = useState("");
   const [requestVersion, setRequestVersion] = useState(0);
-
-  const startDate = FIXED_START_DATE;
-
-  // Load the newest available BTC candle date.
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadLatestDate() {
-      setLoadingLatestDate(true);
-      setDateError("");
-
-      try {
-        const candles = await getBtcPrices({ limit: 1 });
-
-        if (cancelled) return;
-
-        if (candles.length === 0) {
-          throw new Error("No BTC price data is available.");
-        }
-
-        const newestDate = formatCandleDate(
-          candles[candles.length - 1].timestamp
-        );
-
-        if (newestDate < MIN_END_DATE) {
-          throw new Error("No backtest end dates are currently available.");
-        }
-
-        setLatestDate(newestDate);
-        setEndDate(newestDate);
-      } catch (err) {
-        if (!cancelled) {
-          setDateError(getErrorMessage(err));
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingLatestDate(false);
-        }
-      }
-    }
-
-    void loadLatestDate();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Load available strategies.
   useEffect(() => {
@@ -150,37 +100,109 @@ export function BacktestResultsPage() {
     };
   }, []);
 
-  // Load backtest results whenever the strategy or end date changes.
+  // Load date ranges for the selected strategy.
   useEffect(() => {
-    if (!strategyId || !endDate || !latestDate) {
+    if (!strategyId) {
+      setRanges(null);
+      setEndDate("");
       setResult(null);
       return;
     }
 
-    if (endDate < MIN_END_DATE || endDate > latestDate) {
+    let cancelled = false;
+
+    async function loadRanges() {
+      setLoadingRanges(true);
+      setRanges(null);
+      setEndDate("");
       setResult(null);
-      setError("Please select a valid backtest end date.");
+      setError("");
+      setRangeMessage("");
+
+      try {
+        const data = await getBacktestRanges(strategyId);
+
+        if (cancelled) return;
+
+        setRanges(data);
+        setEndDate(data.max_end_date);
+      } catch (err) {
+        if (cancelled) return;
+
+        setRanges(null);
+        setEndDate("");
+
+        if (
+          err instanceof ApiError &&
+          err.code === "NO_MATCHING_BACKTEST"
+        ) {
+          setRangeMessage(
+            "No backtest results have been computed for this strategy yet."
+          );
+        } else {
+          setError(getErrorMessage(err));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingRanges(false);
+        }
+      }
+    }
+
+    void loadRanges();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [strategyId]);
+
+  // Load results for the selected strategy and date range.
+  useEffect(() => {
+    if (!strategyId || !ranges || !endDate) {
+      setResult(null);
       return;
     }
+
+    if (
+      endDate < ranges.min_end_date ||
+      endDate > ranges.max_end_date
+    ) {
+      setResult(null);
+      setError("Please select an end date within the available date range.");
+      return;
+    }
+
+       const selectedRanges = ranges;
+    const selectedEndDate = endDate;
 
     let cancelled = false;
 
     async function loadBacktest() {
       setLoadingResult(true);
       setError("");
+      setRangeMessage("");
       setResult(null);
 
       try {
-        const data = await getBacktestResult(strategyId, {
-          start_date: startDate,
-          end_date: endDate,
+                const data = await getBacktestResult(strategyId, {
+          start_date: selectedRanges.start_date,
+          end_date: selectedEndDate,
         });
 
         if (!cancelled) {
           setResult(data);
         }
       } catch (err) {
-        if (!cancelled) {
+        if (cancelled) return;
+
+        if (
+          err instanceof ApiError &&
+          err.code === "NO_MATCHING_BACKTEST"
+        ) {
+          setRangeMessage(
+            "No backtest results are available for this selected date range."
+          );
+        } else {
           setError(getErrorMessage(err));
         }
       } finally {
@@ -195,7 +217,7 @@ export function BacktestResultsPage() {
     return () => {
       cancelled = true;
     };
-  }, [strategyId, startDate, endDate, latestDate, requestVersion]);
+  }, [strategyId, ranges, endDate, requestVersion]);
 
   if (loadingStrategies) {
     return (
@@ -220,7 +242,13 @@ export function BacktestResultsPage() {
           type="button"
           className="backtest-refresh"
           onClick={() => setRequestVersion((version) => version + 1)}
-          disabled={loadingResult || !strategyId || !endDate}
+          disabled={
+            loadingRanges ||
+            loadingResult ||
+            !strategyId ||
+            !ranges ||
+            !endDate
+          }
         >
           Refresh results
         </button>
@@ -244,7 +272,11 @@ export function BacktestResultsPage() {
 
         <label>
           Start date
-          <input type="date" value={startDate} disabled />
+          <input
+            type="date"
+            value={ranges?.start_date ?? ""}
+            disabled
+          />
         </label>
 
         <label>
@@ -252,23 +284,28 @@ export function BacktestResultsPage() {
           <input
             type="date"
             value={endDate}
-            min={MIN_END_DATE}
-            max={latestDate}
-            disabled={loadingLatestDate || !latestDate}
+            min={ranges?.min_end_date}
+            max={ranges?.max_end_date}
+            disabled={loadingRanges || !ranges}
             onChange={(event) => setEndDate(event.target.value)}
           />
         </label>
       </div>
 
-      {loadingLatestDate && (
-        <p className="backtest-muted">
-          Finding the newest available BTC data...
-        </p>
+      {loadingRanges && (
+        <div className="backtest-loading">
+          <Spinner />
+          <p className="backtest-muted">
+            Loading available dates for this strategy...
+          </p>
+        </div>
       )}
 
-      {dateError && <ErrorMessage message={dateError} />}
-
       {error && <ErrorMessage message={error} />}
+
+      {rangeMessage && (
+        <div className="backtest-empty">{rangeMessage}</div>
+      )}
 
       {strategies.length === 0 && !error && (
         <div className="backtest-empty">
@@ -279,20 +316,24 @@ export function BacktestResultsPage() {
       {loadingResult && (
         <div className="backtest-loading">
           <Spinner />
-          <p className="backtest-muted">Loading backtest results...</p>
+          <p className="backtest-muted">
+            Loading backtest results...
+          </p>
         </div>
       )}
 
-      {result && !loadingResult && !error && (
+      {result && !loadingResult && !error && !rangeMessage && (
         <>
           <div className="backtest-result-meta">
             <span>
               Strategy:{" "}
               <strong>
-                {strategies.find((item) => item.id === result.strategy_id)
-                  ?.name ?? result.strategy_id}
+                {strategies.find(
+                  (item) => item.id === result.strategy_id
+                )?.name ?? result.strategy_id}
               </strong>
             </span>
+
             <span>
               Data range: {result.start_date} to {result.end_date}
             </span>
@@ -330,9 +371,7 @@ export function BacktestResultsPage() {
 
             {result.trades.length === 0 ? (
               <p className="backtest-empty">
-                No trades are available for this result. This may mean that no
-                cached backtest data exists for the selected strategy and date
-                range.
+                No trades are available for this result.
               </p>
             ) : (
               <div className="backtest-table-wrapper">
@@ -346,6 +385,7 @@ export function BacktestResultsPage() {
                       <th>Return</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {result.trades.map((trade, index) => (
                       <tr
