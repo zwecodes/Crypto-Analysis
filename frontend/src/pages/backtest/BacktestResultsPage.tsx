@@ -2,12 +2,15 @@
 import { useEffect, useState } from "react";
 import { ApiError } from "../../services/apiClient";
 import { getBacktestResult } from "../../services/backtestService";
+import { getBtcPrices } from "../../services/priceService";
 import { getStrategies } from "../../services/strategyService";
 import type { BacktestResult, Strategy } from "../../types/api";
 import { ErrorMessage } from "../../components/ui/ErrorMessage";
 import { Spinner } from "../../components/ui/Spinner";
 import "./BacktestResultsPage.css";
 
+const FIXED_START_DATE = "2026-03-31";
+const MIN_END_DATE = "2026-04-30";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -33,6 +36,9 @@ function getErrorMessage(error: unknown): string {
   return "Unable to load backtest results. Please try again.";
 }
 
+function formatCandleDate(timestamp: number): string {
+  return new Date(timestamp * 1000).toISOString().slice(0, 10);
+}
 
 function formatPercent(value: number | null): string {
   return value === null ? "—" : `${value.toFixed(2)}%`;
@@ -46,27 +52,69 @@ function formatPrice(value: number): string {
   }).format(value);
 }
 
-function getToday(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function getSixMonthsAgo(): string {
-  const date = new Date();
-  date.setUTCMonth(date.getUTCMonth() - 6);
-  return date.toISOString().slice(0, 10);
-}
-
 export function BacktestResultsPage() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [strategyId, setStrategyId] = useState("");
-  const [startDate, setStartDate] = useState(getSixMonthsAgo);
-  const [endDate, setEndDate] = useState(getToday);
+  const [endDate, setEndDate] = useState("");
+  const [latestDate, setLatestDate] = useState("");
   const [result, setResult] = useState<BacktestResult | null>(null);
+
   const [loadingStrategies, setLoadingStrategies] = useState(true);
+  const [loadingLatestDate, setLoadingLatestDate] = useState(true);
   const [loadingResult, setLoadingResult] = useState(false);
+
   const [error, setError] = useState("");
+  const [dateError, setDateError] = useState("");
   const [requestVersion, setRequestVersion] = useState(0);
 
+  const startDate = FIXED_START_DATE;
+
+  // Load the newest available BTC candle date.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLatestDate() {
+      setLoadingLatestDate(true);
+      setDateError("");
+
+      try {
+        const candles = await getBtcPrices({ limit: 1 });
+
+        if (cancelled) return;
+
+        if (candles.length === 0) {
+          throw new Error("No BTC price data is available.");
+        }
+
+        const newestDate = formatCandleDate(
+          candles[candles.length - 1].timestamp
+        );
+
+        if (newestDate < MIN_END_DATE) {
+          throw new Error("No backtest end dates are currently available.");
+        }
+
+        setLatestDate(newestDate);
+        setEndDate(newestDate);
+      } catch (err) {
+        if (!cancelled) {
+          setDateError(getErrorMessage(err));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingLatestDate(false);
+        }
+      }
+    }
+
+    void loadLatestDate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load available strategies.
   useEffect(() => {
     let cancelled = false;
 
@@ -102,15 +150,16 @@ export function BacktestResultsPage() {
     };
   }, []);
 
+  // Load backtest results whenever the strategy or end date changes.
   useEffect(() => {
-    if (!strategyId || !startDate || !endDate) {
+    if (!strategyId || !endDate || !latestDate) {
       setResult(null);
       return;
     }
 
-    if (startDate > endDate) {
+    if (endDate < MIN_END_DATE || endDate > latestDate) {
       setResult(null);
-      setError("Start date must be on or before end date.");
+      setError("Please select a valid backtest end date.");
       return;
     }
 
@@ -146,7 +195,7 @@ export function BacktestResultsPage() {
     return () => {
       cancelled = true;
     };
-  }, [strategyId, startDate, endDate, requestVersion]);
+  }, [strategyId, startDate, endDate, latestDate, requestVersion]);
 
   if (loadingStrategies) {
     return (
@@ -171,7 +220,7 @@ export function BacktestResultsPage() {
           type="button"
           className="backtest-refresh"
           onClick={() => setRequestVersion((version) => version + 1)}
-          disabled={loadingResult || !strategyId}
+          disabled={loadingResult || !strategyId || !endDate}
         >
           Refresh results
         </button>
@@ -195,12 +244,7 @@ export function BacktestResultsPage() {
 
         <label>
           Start date
-          <input
-            type="date"
-            value={startDate}
-            max={endDate}
-            onChange={(event) => setStartDate(event.target.value)}
-          />
+          <input type="date" value={startDate} disabled />
         </label>
 
         <label>
@@ -208,12 +252,21 @@ export function BacktestResultsPage() {
           <input
             type="date"
             value={endDate}
-            min={startDate}
-            max={getToday()}
+            min={MIN_END_DATE}
+            max={latestDate}
+            disabled={loadingLatestDate || !latestDate}
             onChange={(event) => setEndDate(event.target.value)}
           />
         </label>
       </div>
+
+      {loadingLatestDate && (
+        <p className="backtest-muted">
+          Finding the newest available BTC data...
+        </p>
+      )}
+
+      {dateError && <ErrorMessage message={dateError} />}
 
       {error && <ErrorMessage message={error} />}
 
