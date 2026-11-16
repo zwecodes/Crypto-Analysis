@@ -1,6 +1,6 @@
 # API Contract
 
-**Contract version: 1.1**
+**Contract version: 1.2**
 
 Base URL (dev): `http://localhost:8001`
 Base URL (prod): `https://crypto-analysis-x1y8.onrender.com`
@@ -293,3 +293,20 @@ Clients should branch on `error.code`, not only on the HTTP status.
 - All timestamps are Unix epoch seconds (UTC) unless noted otherwise (dates in backtest use ISO format).
 - All prices are in USD.
 - This contract is the source of truth. Update here first, then implement.
+
+
+
+### GET /api/backtest/{strategy_id}/ranges
+Returns the date bounds of the stored backtest results for a strategy, so a client can build a date picker without guessing. Backtests are stored for a fixed `start_date` and one result per `end_date` (one per closed UTC day). Any `end_date` from `min_end_date` to `max_end_date` is valid for `GET /api/backtest/{strategy_id}`.
+
+**Response 200:**
+```json
+{
+  "start_date": "2026-03-31",
+  "min_end_date": "2026-04-30",
+  "max_end_date": "2026-11-15"
+}
+```
+
+**Response 404 `NOT_FOUND`:** unknown strategy id.
+**Response 404 `NO_MATCHING_BACKTEST`:** the strategy exists but no results have been computed yet (for example `ml_signal`).

@@ -183,3 +183,59 @@ def test_invalid_dates_are_rejected_before_the_database(monkeypatch, query, mess
     error = response.json()["error"]
     assert error["code"] == "BAD_REQUEST"
     assert message_part in error["message"]
+
+
+def ranges_url(strategy=STRATEGY):
+    return f"/api/backtest/{strategy}/ranges"
+
+
+def test_ranges_returns_start_and_end_bounds(monkeypatch):
+    rows = [
+        dict(CACHED_ROW, end_date="2026-04-30"),
+        dict(CACHED_ROW, end_date="2026-10-23"),
+        dict(CACHED_ROW, end_date="2026-11-15"),
+    ]
+    use_tables(monkeypatch, rows)
+
+    response = client.get(ranges_url())
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "start_date": "2026-03-31",
+        "min_end_date": "2026-04-30",
+        "max_end_date": "2026-11-15",
+    }
+
+
+def test_ranges_ignores_rows_with_another_start_date(monkeypatch):
+    rows = [
+        dict(CACHED_ROW, start_date="2026-01-01", end_date="2026-02-01"),
+        dict(CACHED_ROW, end_date="2026-04-30"),
+        dict(CACHED_ROW, end_date="2026-11-15"),
+    ]
+    use_tables(monkeypatch, rows)
+
+    response = client.get(ranges_url())
+
+    assert response.json()["start_date"] == "2026-03-31"
+    assert response.json()["min_end_date"] == "2026-04-30"
+
+
+def test_ranges_with_no_results_is_a_clear_404(monkeypatch):
+    use_tables(monkeypatch, [])
+
+    response = client.get(ranges_url())
+
+    assert response.status_code == 404
+    error = response.json()["error"]
+    assert error["code"] == "NO_MATCHING_BACKTEST"
+    assert "No backtest results have been computed" in error["message"]
+
+
+def test_ranges_unknown_strategy_is_not_found(monkeypatch):
+    use_tables(monkeypatch, [CACHED_ROW])
+
+    response = client.get(ranges_url("not_a_strategy"))
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "NOT_FOUND"
