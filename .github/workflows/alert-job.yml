@@ -8,6 +8,9 @@ on:
       dry_run:
         description: "Dry run (no emails). Type false to send real emails."
         default: "true"
+      test_email:
+        description: "Send ONE test email to the EMAIL_USER address and stop. Type true to test."
+        default: "false"
 
 permissions:
   contents: read
@@ -58,4 +61,5 @@ jobs:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+          TEST_EMAIL: ${{ github.event.inputs.test_email || 'false' }}
         run: python alerts/run_alerts.py
