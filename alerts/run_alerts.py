@@ -77,7 +77,29 @@ def send_email(to_address, strategy_name, signal, price):
         server.send_message(msg)
 
 
+def send_test_email():
+    """Send one test email to the sender's own address (EMAIL_USER). No users involved."""
+    address = os.environ["EMAIL_USER"]
+    msg = EmailMessage()
+    msg["Subject"] = "Crypto-Analysis alert job: test email"
+    msg["From"] = address
+    msg["To"] = address
+    msg.set_content("Test from the alert job. If you can read this, Gmail SMTP works.")
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(address, os.environ["EMAIL_APP_PASSWORD"])
+            server.send_message(msg)
+    except Exception as exc:
+        print(f"Test email failed: {type(exc).__name__}")
+        sys.exit(1)
+    print("Test email sent to the EMAIL_USER address")
+
+
 def main():
+    if os.getenv("TEST_EMAIL", "false").strip().lower() == "true":
+        send_test_email()
+        return
     print(f"Mode: {'DRY RUN (no emails)' if DRY_RUN else 'LIVE (emails will be sent)'}")
     client = get_client()
     now = datetime.now(timezone.utc)
