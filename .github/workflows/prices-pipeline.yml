@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install backend dependencies
         working-directory: ./backend
         run: pip install -r requirements.txt
 
@@ -30,3 +30,15 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           BINANCE_BASE_URL: https://data-api.binance.vision
         run: python services/data_pipeline.py
+
+      - name: Install ML dependencies
+        working-directory: ./ml
+        run: pip install -r requirements.txt
+
+      - name: Update technical indicators in Supabase
+        working-directory: ./ml
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          BINANCE_BASE_URL: https://data-api.binance.vision
+        run: python -m update_indicators
