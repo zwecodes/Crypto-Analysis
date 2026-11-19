@@ -7,6 +7,10 @@ Reads active rows from user_strategy, decides who should be alerted
 DRY_RUN is on unless DRY_RUN=false. In dry-run mode nothing is sent, no
 user emails are fetched, and last_alerted_at is not changed.
 
+TEST_ALERT=true sends a labeled TEST email to every active user, ignoring
+the signal and the cooldown, and does not change last_alerted_at.
+TEST_EMAIL=true sends one test email to the sender's own address and stops.
+
 Logs are public, so this script prints counts only: never user ids,
 emails, keys or error messages.
 """
@@ -29,6 +33,7 @@ from dry_run import closed_candles  # noqa: E402
 from strategies import get_strategy  # noqa: E402
 
 DRY_RUN = os.getenv("DRY_RUN", "true").strip().lower() != "false"
+TEST_ALERT = os.getenv("TEST_ALERT", "false").strip().lower() == "true"
 
 
 def get_client():
@@ -62,15 +67,24 @@ def get_user_email(client, user_id):
 
 def send_email(to_address, strategy_name, signal, price):
     msg = EmailMessage()
-    msg["Subject"] = f"BTC {signal} alert: {strategy_name}"
     msg["From"] = os.environ["EMAIL_USER"]
     msg["To"] = to_address
-    msg.set_content(
-        f"Your strategy \"{strategy_name}\" just signalled {signal} on BTC.\n"
-        f"Latest closed hourly candle: close = {price:,.2f} USD.\n\n"
-        "This is an automated alert from the Crypto-Analysis project. "
-        "It is not financial advice."
-    )
+    if signal == "TEST":
+        msg["Subject"] = "[TEST] Crypto-Analysis BTC alert"
+        msg.set_content(
+            f"This is a TEST of the alert system for your strategy \"{strategy_name}\".\n"
+            f"Latest closed hourly candle: close = {price:,.2f} USD.\n\n"
+            "No trading signal happened. If you can read this, delivery works.\n"
+            "Automated message from the Crypto-Analysis project. Not financial advice."
+        )
+    else:
+        msg["Subject"] = f"BTC {signal} alert: {strategy_name}"
+        msg.set_content(
+            f"Your strategy \"{strategy_name}\" just signalled {signal} on BTC.\n"
+            f"Latest closed hourly candle: close = {price:,.2f} USD.\n\n"
+            "This is an automated alert from the Crypto-Analysis project. "
+            "It is not financial advice."
+        )
     with smtplib.SMTP("smtp.gmail.com", 587) as server:
         server.starttls()
         server.login(os.environ["EMAIL_USER"], os.environ["EMAIL_APP_PASSWORD"])
@@ -100,7 +114,10 @@ def main():
     if os.getenv("TEST_EMAIL", "false").strip().lower() == "true":
         send_test_email()
         return
+
     print(f"Mode: {'DRY RUN (no emails)' if DRY_RUN else 'LIVE (emails will be sent)'}")
+    if TEST_ALERT:
+        print("TEST ALERT: labeled test to every active user, signal and cooldown ignored")
     client = get_client()
     now = datetime.now(timezone.utc)
 
@@ -122,7 +139,9 @@ def main():
 
     for sub in subscriptions:
         strategy_id = sub["strategy_id"]
-        if strategy_id == "ml_signal":
+        if TEST_ALERT:
+            signal = "TEST"
+        elif strategy_id == "ml_signal":
             signal = ml_signal_change(ml_latest, ml_previous) if ml_latest else None
         else:
             signal = check_signal(get_strategy(strategy_id), previous, current)
@@ -130,7 +149,7 @@ def main():
         if signal is None:
             counts["no_change"] += 1
             continue
-        if not cooldown_passed(sub["last_alerted_at"], now):
+        if not TEST_ALERT and not cooldown_passed(sub["last_alerted_at"], now):
             counts["cooldown"] += 1
             continue
         if DRY_RUN:
@@ -141,9 +160,10 @@ def main():
         try:
             email = get_user_email(client, sub["user_id"])
             send_email(email, get_strategy(strategy_id)["name"], signal, price)
-            client.table("user_strategy").update(
-                {"last_alerted_at": now.isoformat()}
-            ).eq("user_id", sub["user_id"]).execute()
+            if not TEST_ALERT:
+                client.table("user_strategy").update(
+                    {"last_alerted_at": now.isoformat()}
+                ).eq("user_id", sub["user_id"]).execute()
             counts["sent"] += 1
         except Exception as exc:
             counts["failed"] += 1

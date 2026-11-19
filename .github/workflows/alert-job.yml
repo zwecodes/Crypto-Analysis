@@ -11,6 +11,9 @@ on:
       test_email:
         description: "Send ONE test email to the EMAIL_USER address and stop. Type true to test."
         default: "false"
+      test_alert:
+        description: "Send a labeled TEST alert to every active user (needs dry_run=false). Type true to test."
+        default: "false"
 
 permissions:
   contents: read
@@ -62,4 +65,5 @@ jobs:
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
           TEST_EMAIL: ${{ github.event.inputs.test_email || 'false' }}
+          TEST_ALERT: ${{ github.event.inputs.test_alert || 'false' }}
         run: python alerts/run_alerts.py
