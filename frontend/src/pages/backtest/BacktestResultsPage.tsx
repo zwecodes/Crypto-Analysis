@@ -113,6 +113,7 @@ export function BacktestResultsPage() {
 
     async function loadRanges() {
       setLoadingRanges(true);
+      setLoadingResult(false);
       setRanges(null);
       setEndDate("");
       setResult(null);
@@ -158,8 +159,9 @@ export function BacktestResultsPage() {
 
   // Load results for the selected strategy and date range.
   useEffect(() => {
-    if (!strategyId || !ranges || !endDate) {
+        if (!strategyId || !ranges || !endDate) {
       setResult(null);
+      setLoadingResult(false);
       return;
     }
 
