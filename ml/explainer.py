@@ -10,7 +10,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI, APIError, APITimeoutError, RateLimitError
 from strategies import STRATEGIES
-from backtest import run_backtest
+from backtest import run_backtest, run_backtests_for_end_dates
 
 env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
@@ -29,7 +29,7 @@ def build_prompt(strategy, backtest_result):
 Strategy name: {strategy['name']}
 Rule: {strategy['description']}
 
-Historical backtest results (past 6 months):
+Historical backtest results ({backtest_result['start_date']} to {backtest_result['end_date']}):
 - Total return: {backtest_result['total_return_pct']}%
 - Number of trades: {backtest_result['num_trades']}
 - Win rate: {backtest_result['win_rate_pct']}%
@@ -70,9 +70,20 @@ def call_llm_with_retry(prompt, max_retries=3):
     return None
 
 
-def explain_strategy(strategy_id: str):
+def _latest_results():
+    """Newest-end-date backtest result per strategy, same window as the Backtest page."""
+    latest = {}
+    for r in run_backtests_for_end_dates():
+        cur = latest.get(r["strategy_id"])
+        if cur is None or r["end_date"] > cur["end_date"]:
+            latest[r["strategy_id"]] = r
+    return latest
+
+
+def explain_strategy(strategy_id: str, backtest_result=None):
     strategy = next(s for s in STRATEGIES if s["id"] == strategy_id)
-    backtest_result = run_backtest(strategy_id)
+    if backtest_result is None:
+        backtest_result = run_backtest(strategy_id)
 
     prompt = build_prompt(strategy, backtest_result)
     raw_text = call_llm_with_retry(prompt)
@@ -105,10 +116,11 @@ def generate_all_explanations(force_refresh=False):
 
     rule_based_strategies = [s for s in STRATEGIES if s["buy_rule"] is not None]
     results = []
+    latest = _latest_results()
 
     for strategy in rule_based_strategies:
         print(f"Generating explanation for {strategy['id']}...")
-        result = explain_strategy(strategy["id"])
+        result = explain_strategy(strategy["id"], latest.get(strategy["id"]))
         results.append(result)
 
     with open(CACHE_PATH, "w") as f:
