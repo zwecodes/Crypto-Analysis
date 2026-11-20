@@ -63,7 +63,7 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
-          DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           TEST_EMAIL: ${{ github.event.inputs.test_email || 'false' }}
           TEST_ALERT: ${{ github.event.inputs.test_alert || 'false' }}
         run: python alerts/run_alerts.py
