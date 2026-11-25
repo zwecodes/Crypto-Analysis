@@ -1,6 +1,6 @@
 # Integration testing report (#74 and #77)
 
-Date: 2026-11-24 (UTC). Tester: Zwe.
+Testing period: 2026-11-19 to 2026-11-25 (UTC). Tester: Zwe.
 
 ## Environment
 
@@ -11,7 +11,7 @@ Date: 2026-11-24 (UTC). Tester: Zwe.
 
 ## Summary
 
-The integration pass is **passed with known limitations** (section 4). Still open before the **2026-11-27** submission: confirming the first live alert email delivery when a signal transitions in `LIVE` mode (section 5).
+The integration pass is **passed** (with documented design limitations in section 4) ahead of the **2026-11-27** report submission and **2026-12-01** demo. Backend contract checks (environment noted per row), frontend flows, data pipelines and live end-to-end email alert delivery were verified (`#49`, `#74`, `#76`, and `#77` closed).
 
 ## 1. Backend contract checks (#74)
 
@@ -29,7 +29,7 @@ The integration pass is **passed with known limitations** (section 4). Still ope
 | Rate limit (`429 RATE_LIMITED`, >60 req/min) | 429 triggered after 60 requests in 34.33s (production sequential `curl` took 97.77s for 70 requests, staying below 60 req/min) | local (and timed on production) |
 | Automated backend tests | 29 passed (`pytest` in `backend/`) | local |
 
-## 2. Frontend flows on the live site (#77)
+## 2. Frontend & end-to-end live flows (#77)
 
 | Flow | Result |
 |---|---|
@@ -37,20 +37,20 @@ The integration pass is **passed with known limitations** (section 4). Still ope
 | Open `/dashboard` and `/backtest` directly and refresh | Pass (no 404) |
 | Dashboard | Pass: price, 24h change/high/low/volume, 24h chart, RSI 34.47, MACD -430.6, MACD signal -346.19, SMA 20 $62,913.32, SMA 50 $63,347.02, signal HOLD 79%, market status Connected |
 | Strategy Picker | Pass: five strategies with regenerated pros/cons (RSI Oversold reflects 71 trades, 71.8% win rate, 5.69% return; leftover `test_strategy` row removed), MACD Momentum selected with alerts enabled |
-| Backtest Results | Pass: start date 2026-03-31, end date defaults to the newest (2026-11-18), result and trade history table shown; `ml_signal` displays `"No backtest results have been computed for this strategy yet."` (resolved loading spinner issue) |
+| Backtest Results | Pass: start date 2026-03-31, end date defaults to the newest (2026-11-18), result and trade history table shown; `ml_signal` displays `"No backtest results have been computed for this strategy yet."` with no spinner |
 | Alert Settings | Pass: MACD Momentum, Active, subscription start time shown |
-| Alert email | Pass: the `[TEST]` alert arrived in the Primary inbox |
+| Alert email (`[TEST]` & `LIVE`) | Pass: `[TEST]` alert verified, and live `BTC SELL alert: MACD Momentum` (`sent: 1`) delivered to Primary inbox at `2026-11-25 02:20 UTC` with `last_alerted_at` updated in Supabase (`2026-11-25 02:20:47.646365+00`) |
 
 ## 3. Data pipelines
 
 | Data | Schedule | Status |
 |---|---|---|
-| Prices | Hourly (GitHub Actions) | Working. Binance is reached through `data-api.binance.vision` since PR #101 (the original error was HTTP 451 from GitHub's US runners). Observed about 3 hours behind on the dashboard at 06:31 UTC. |
+| Prices | Hourly (GitHub Actions) | Working. Binance is reached through `data-api.binance.vision` since PR #101 (the original error was HTTP 451 from GitHub's US runners). Observed about 3 hours behind on the dashboard at 06:31 UTC (2026-11-20). |
 | Indicators | Hourly, in the same workflow (Python 3.12) | Working, values shown on the dashboard |
-| Signals | Hourly, inside Kaung's alert job (reads candles from Binance directly) | Working, fresh timestamp |
+| Signals & Live Alerts | Hourly, inside Kaung's alert job (`Mode: LIVE`) | Working. Verified end-to-end `SELL` signal flip on `macd_momentum` (`sent: 1`) and `last_alerted_at` persistence in Supabase on `2026-11-25`. |
 | Backtests | Daily, 00:45 UTC | Working. Newest end date is yesterday (UTC), one stored result per strategy per closed day from 2026-03-31. `ml_signal` has none (intentional). |
 
-## 4. Known limitations & minor issues
+## 4. Known limitations
 
 1. GitHub scheduled workflows are best-effort. Runs can be delayed by hours (about 7 to 9 hours between scheduled alert-job runs observed), so prices, indicators and alerts can lag.
 2. Dashboard cards show different "as of" times: prices and indicators come from Supabase, while the signal is computed from Binance directly by the alert job.
@@ -59,13 +59,14 @@ The integration pass is **passed with known limitations** (section 4). Still ope
 5. `ml_signal` has no backtest and no pros/cons. This is intentional (the model is trained on the same period, so a backtest would be mostly in-sample, and the explainer builds from backtest numbers).
 6. The Render free tier takes about a minute to wake up after idle time.
 
-## 5. Not verified / open
+## 5. Not verified in live production
 
 - **Signals empty state** (`HOLD` with `null` confidence): not tested, because production has a real signal.
-- **Real alert end to end** (a signal flips, the email is sent, `last_alerted_at` is saved, nothing repeats within 6 hours): go-live PR is merged and scheduled runs are confirmed active in `Mode: LIVE` (run `#28` logged `'users': 2, 'no_change': 2, 'sent': 0`); waiting for a live signal transition to trigger and verify.
+- **6-hour alert cooldown** (suppressing repeat alerts within 6 hours of `last_alerted_at`): not observed in production, because no second signal flip occurred within 6 hours of the first alert.
 
-## 6. Next steps and decisions
+## 6. Submission & demo notes
 
-- **Submission / demo date:** `2026-11-27`.
-- Scheduled alert-job runs are live in `Mode: LIVE` for any user with an active strategy (quick kill switch via `Actions → Alert job → ⋯ → Disable workflow`). Watching `zweaung1266@gmail.com` and `last_alerted_at` in Supabase for `sent: 1` on a real signal flip before closing `#49` and `#76`.
-- After submission/demo: remove numbers from the pros/cons text.
+- **Submission / report date:** `2026-11-27`. **Demo date:** `2026-12-01`. All required integration checks and live alert verifications (`#49`, `#74`, `#76`, and `#77`) are complete and closed.
+- Alerts are emailed from the project’s Gmail account to every user who has a strategy selected, with a 6-hour cooldown per user.
+- Quick kill switch for live alerts if needed: `Actions → Alert job → ⋯ → Disable workflow`.
+- After the demo on Dec 1: decide whether to switch live alerts back to dry-run or disable the workflow when the project is done, and remove numbers from the pros/cons text.
